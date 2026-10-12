@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>OverplayHUD</title>
+<link rel="stylesheet" href="hud.css">
+</head>
+<body>
+
+<!-- ===== 预览模式工具条 =====
+     只有「设置 → 预览」开出来的那个窗口（带 ?preview=1）才会显示；
+     真实覆盖层不带这个参数，这一块永远不会出现、也不占位置。 -->
+<div class="preview-bar" id="previewBar" aria-hidden="true">
+  <span class="pv-tag">预览 · 模拟数据</span>
+  <button class="pv-btn" id="pvPause" title="冻结画面，模拟数据仍在跑">⏸ 暂停</button>
+  <button class="pv-btn" id="pvRestart" title="模拟时间线归零，从头演一遍">↺ 重播</button>
+  <span class="pv-sep"></span>
+  <span class="pv-lab">跳到</span>
+  <button class="pv-btn" data-pv-seek="5">冻结时间</button>
+  <button class="pv-btn" data-pv-seek="40">回合进行</button>
+  <button class="pv-btn" data-pv-seek="70">已下包</button>
+  <button class="pv-btn" data-pv-seek="125">回合结算</button>
+  <span class="pv-sep"></span>
+  <span class="pv-lab">试播报</span>
+  <button class="pv-btn" data-pv-ev="kill">击杀</button>
+  <button class="pv-btn" data-pv-ev="multi">连杀</button>
+  <button class="pv-btn" data-pv-ev="death">阵亡</button>
+  <button class="pv-btn" data-pv-ev="assist">助攻</button>
+  <button class="pv-btn" data-pv-ev="mvp">MVP</button>
+  <span class="pv-note" id="pvNote"></span>
+</div>
+
+<svg class="sprite" aria-hidden="true" width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="sym-badge" viewBox="0 0 30 36">
+      <path d="M3 2H27V22L15 34.5 3 22Z" fill="#292C2F" stroke="#8A7F55" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="M15 8.4c-2.9 0-5.2 2.2-5.2 5 0 1.5.7 2.7 1.8 3.5v2.1c0 .6.4 1 .9 1h5c.5 0 .9-.4.9-1v-2.1c1.1-.8 1.8-2 1.8-3.5 0-2.8-2.3-5-5.2-5z" fill="#D3D8DE"/>
+      <ellipse cx="12.9" cy="13.7" rx="1.65" ry="1.9" fill="#1F2225"/>
+      <ellipse cx="17.1" cy="13.7" rx="1.65" ry="1.9" fill="#1F2225"/>
+      <path d="M15 16l-.8 1.6h1.6z" fill="#1F2225"/>
+      <path d="M13.4 19.9v1.1M16.6 19.9v1.1" stroke="#1F2225" stroke-width="0.9"/>
+    </symbol>
+    <symbol id="sym-ct-mark" viewBox="0 0 64 40">
+      <g fill="currentColor">
+        <path d="M29 11 L3 2 L10 11 Z"/>
+        <path d="M29 17 L1 10 L8 18 Z"/>
+        <path d="M29 23 L4 22 L11 26 Z"/>
+        <path d="M35 11 L61 2 L54 11 Z"/>
+        <path d="M35 17 L63 10 L56 18 Z"/>
+        <path d="M35 23 L60 22 L53 26 Z"/>
+        <path d="M32 12 L37 20 L32 35 L27 20 Z"/>
+      </g>
+    </symbol>
+    <symbol id="sym-t-mark" viewBox="0 0 64 40">
+      <g fill="currentColor">
+        <path d="M30 3 C19 12 12 22 7 35 L15 35 C19 24 25 16 33 8 Z"/>
+        <path d="M34 3 C45 12 52 22 57 35 L49 35 C45 24 39 16 31 8 Z"/>
+      </g>
+    </symbol>
+    <symbol id="sym-bullet" viewBox="0 0 16 36">
+      <path d="M8 1.6c2.4 3.5 3.9 7.2 3.9 11.2v20.6H4.1V12.8c0-4 1.5-7.7 3.9-11.2z"
+            fill="rgba(230, 236, 242, 0.09)" stroke="#DFE5EB" stroke-width="2.1" stroke-linejoin="round"/>
+      <path d="M4.1 29.4h7.8" stroke="#DFE5EB" stroke-width="1.7"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div id="hud" class="hud hidden">
+
+  <!-- ===== 顶部比分面板：CT存活 | 时间+比分 | T存活 ===== -->
+  <div class="top">
+    <div class="scoreboard" data-show="scoreBar">
+
+      <div class="team-block ct">
+        <svg class="mark" viewBox="0 0 64 40" aria-hidden="true"><use href="#sym-ct-mark"/></svg>
+        <span class="alive" id="aliveCT">CT</span>
+        <span class="label">存活</span>
+      </div>
+
+      <div class="center-block">
+        <div class="time-cell" data-show="timer" id="timerBlock">
+          <span class="ico-bomb" id="bombIco"></span>
+          <span class="time" id="timerText"></span>
+        </div>
+        <div class="score-cells">
+          <div class="score-cell ct"><span class="score" id="scoreCT">0</span></div>
+          <div class="score-cell t"><span class="score" id="scoreT">0</span></div>
+        </div>
+      </div>
+
+      <div class="team-block t">
+        <svg class="mark" viewBox="0 0 64 40" aria-hidden="true"><use href="#sym-t-mark"/></svg>
+        <span class="alive" id="aliveT">T</span>
+        <span class="label">存活</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== 左侧信息组（自上而下：金钱模块 → 血量护甲模块）===== -->
+
+  <!-- 金钱模块：常态 1 行 / 消费扣除 2 行（主金额在上，扣款在下）/ 击杀奖励 2 行（奖励在上，主金额在下） -->
+  <div class="money-module hud-strip" data-show="money" id="moneyModule">
+    <div class="line-wrap" id="rewardWrap">
+      <div class="money-line delta reward" id="rewardLine">
+        <span class="sym">+$</span><span class="amt" id="rewardAmt">0</span>
+      </div>
+    </div>
+
+    <div class="money-line main">
+      <span class="sym">$</span><span class="amt" id="money">800</span>
+    </div>
+
+    <div class="line-wrap" id="spendWrap">
+      <div class="money-line delta spend" id="spendLine">
+        <span class="sym">-$</span><span class="amt" id="spendAmt">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 血量模块 + 护甲模块 -->
+  <div class="hud-bar bar-left hud-strip" id="bottomBar">
+    <div class="module health" data-show="health" id="healthBlock">
+      <svg class="ico ico-health" id="hpIcon" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M13.2 3.4h5.6v9.8h9.8v5.6h-9.8v9.8h-5.6v-9.8H3.4v-5.6h9.8z"/>
+      </svg>
+      <span class="val" id="hp">100</span>
+      <span class="bar health-bar"><i id="hpFill"></i></span>
+    </div>
+
+    <div class="module armor" data-show="armor" id="armorBlock">
+      <svg class="ico ico-armor" id="armorIcon" viewBox="0 0 32 36" aria-hidden="true">
+        <path class="shield" d="M16 2.4 29.4 7.7v10c0 7.8-5.5 13-13.4 15.7C8.1 30.7 2.6 25.5 2.6 17.7v-10z"/>
+        <path class="helmet" d="M16 12.2c3.6 0 6.4 2.7 6.4 6.2v1.9H9.6v-1.9c0-3.5 2.8-6.2 6.4-6.2z"/>
+      </svg>
+      <span class="val" id="ar">0</span>
+      <span class="bar armor-bar"><i id="arFill"></i></span>
+    </div>
+
+    <div class="module kit" data-show="defuseKit" id="kitBlock">
+      <span class="ico-kit"></span>
+    </div>
+  </div>
+
+  <!-- ===== 右侧武器栏（纯文字方案，不用任何图标素材） ===== -->
+  <div class="weapon-bar" data-show="weaponList" id="weaponBar">
+    <div class="slot" data-slot="1"><span class="wtext"></span><span class="wnum">1</span></div>
+    <div class="slot" data-slot="2"><span class="wtext"></span><span class="wnum">2</span></div>
+    <div class="slot" data-slot="3"><span class="wtext"></span><span class="wnum">3</span></div>
+    <div class="slot" data-slot="4"><span class="wtext"></span><span class="wnum">4</span></div>
+    <div class="slot" data-slot="5"><span class="wtext"></span><span class="wnum">5</span></div>
+  </div>
+
+  <!-- ===== 右下：连杀骷髅 + 弹药 ===== -->
+  <div class="hud-bar bar-right hud-strip" id="rightBar">
+    <div class="ammo-block">
+
+      <span class="kills" data-show="roundKills" id="killsBlock">
+        <svg class="badge" viewBox="0 0 30 36"><use href="#sym-badge"/></svg>
+        <svg class="badge" viewBox="0 0 30 36"><use href="#sym-badge"/></svg>
+        <svg class="badge" viewBox="0 0 30 36"><use href="#sym-badge"/></svg>
+        <svg class="badge" viewBox="0 0 30 36"><use href="#sym-badge"/></svg>
+        <svg class="badge" viewBox="0 0 30 36"><use href="#sym-badge"/></svg>
+      </span>
+
+      <span class="clipwrap" data-show="ammo" id="clipWrap">
+        <span class="clip" id="clip">30</span><span class="slash">/</span><span class="reserve" id="reserve">90</span>
+      </span>
+
+      <span class="bullets" aria-hidden="true">
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
+      </span>
+
+    </div>
+  </div>
+
+  <!-- ===== 队友 / 对手名单（数据来自 GSI 的 allplayers，只有死亡观战时才有） ===== -->
+  <div class="roster" data-show="roster" id="rosterPanel"></div>
+
+  <!-- ===== 击杀 / 死亡播报（内容由 config 的 events 段生成） ===== -->
+  <div class="event-layer" id="eventLayer" aria-hidden="true"></div>
+
+  <!-- ===== 用户自定义文本元素（内容由 config 的 custom 段生成） ===== -->
+  <div class="custom-layer" id="customLayer" aria-hidden="true"></div>
+
+  <!-- ===== 用户画图生成的形状（内容由 config 的 shapes 段生成，SVG 图元重建） ===== -->
+  <div class="shape-layer" id="shapeLayer" aria-hidden="true"></div>
+
+</div>
+
+<script src="../vars.js"></script>
+<script src="../fit.js"></script>
+<script src="../advstyle.js"></script>
+<script src="hud.js"></script>
+</body>
+</html>

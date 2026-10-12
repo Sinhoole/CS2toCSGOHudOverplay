@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>OverplayHUD 设置</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+
+  <header class="titlebar">
+    <div class="tb-brand">
+      <span class="tb-mark"></span>
+      <span class="tb-title">OverplayHUD 设置</span>
+      <span class="tb-meta">Vol. II &nbsp;·&nbsp; v2.1.0 &nbsp;·&nbsp; CS2 覆盖层</span>
+      <span class="tb-dirty" id="dirty" hidden>未保存</span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn pv" id="btnPreview" title="开一个预览窗口，用模拟数据实时看效果">预览</button>
+      <button class="tb-btn" id="btnMin" title="最小化">&#8212;</button>
+      <button class="tb-btn danger" id="btnClose" title="关闭">&#10005;</button>
+    </div>
+  </header>
+
+  <div class="shell">
+
+    <nav class="side" id="side"></nav>
+
+    <main class="content" id="content"></main>
+
+  </div>
+
+  <footer class="footer">
+    <div class="foot-left">
+      <button class="link" id="btnExport">导出配置</button>
+      <button class="link" id="btnImport">导入配置</button>
+      <button class="link" id="btnCopy">复制配置</button>
+      <button class="link" id="btnReveal">定位文件</button>
+      <span class="path" id="cfgPath"></span>
+    </div>
+    <div class="foot-right">
+      <span class="status" id="status"></span>
+      <button class="btn" id="btnReload">放弃改动</button>
+      <button class="btn" id="btnReset">恢复默认</button>
+      <button class="btn primary cta" id="btnSave">保存</button>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../advstyle.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

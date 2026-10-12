@@ -1,0 +1,91 @@
+{
+  "name": "overplayhud",
+  "productName": "OverplayHUD",
+  "version": "2.1.0",
+  "private": true,
+  "description": "把 CS2 的 HUD 还原成 CS:GO 时代 —— 基于 Valve 官方 Game State Integration 的透明覆盖层",
+  "author": "Sinhoole",
+  "keywords": [
+    "cs2",
+    "counter-strike-2",
+    "csgo",
+    "hud",
+    "overlay",
+    "gsi",
+    "game-state-integration",
+    "valve",
+    "electron"
+  ],
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node tools/start.js",
+    "mock": "node tools/start.js --mock",
+    "settings": "node tools/start.js --settings",
+    "settings-mock": "node tools/start.js --mock --settings",
+    "verify": "node tools/verify-gsi.mjs",
+    "selftest": "node tools/selftest.mjs",
+    "test:config": "node tools/config-test.mjs",
+    "install-cfg": "node tools/install-cfg.mjs",
+    "icon": "node tools/make-icon.mjs",
+    "dist": "node tools/make-icon.mjs && node tools/dist.mjs --win --x64",
+    "dist:portable": "node tools/make-icon.mjs && node tools/dist.mjs --win portable --x64",
+    "dist:setup": "node tools/make-icon.mjs && node tools/dist.mjs --win nsis --x64",
+    "dist:dir": "node tools/make-icon.mjs && node tools/dist.mjs --win --dir"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.overplayhud.overlay",
+    "productName": "OverplayHUD",
+    "copyright": "OverplayHUD",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "cfg/**/*",
+      "docs/**/*",
+      "config.json",
+      "TUTORIAL.md",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "assets/**",
+      "cfg/**"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "OverplayHUD-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "OverplayHUD",
+      "artifactName": "OverplayHUD-${version}-setup.exe"
+    }
+  }
+}

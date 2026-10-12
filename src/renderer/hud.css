@@ -1,0 +1,1280 @@
+/* OverplayHUD —— CS:GO / CS2 底部血甲 HUD 复刻
+   设计基准 1920x1080，所有尺寸乘 var(--scale) 适配任意分辨率。
+
+   状态分级（血量）：
+     >= 50        白填充，无发光
+     49 ~ 26      红填充，无发光
+     <= 25        红填充 + 红色外发光（血量越低越强），底栏左侧叠红渐变
+   护甲全程无预警色、无发光。
+*/
+
+:root {
+  --scale: 1;
+  --inset-x: 26px;
+  --inset-y: 22px;
+
+  --font-hud: "Bahnschrift", "DIN Alternate", "Segoe UI Variable Display",
+              "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+
+  /* 底栏 */
+  --bar-alpha: 0.50;
+  --bar-color: 14, 19, 26;
+  --bar-h: calc(96px * var(--scale));
+  --bar-pad-l: calc(30px * var(--scale));
+  --bar-pad-r: calc(150px * var(--scale));
+
+  /* 前景 */
+  --white: #F3F6F8;
+  --dim: rgba(243, 246, 248, 0.62);
+  --red: #E8231C;
+  --money-gain: #A6D94A;      /* 击杀奖励 / 收入 */
+  --money-spend: #E8231C;     /* 购买支出 */
+  --glow-rgb: 255, 46, 36;
+  --glow: 0;                       /* 0~1，由 JS 按血量注入，越低越亮 */
+
+  /* 图标：浅灰填充 + 白色细描边 */
+  --ico-fill: rgba(232, 238, 242, 0.34);
+  --ico-stroke: rgba(255, 255, 255, 0.88);
+  --ico-helmet: rgba(255, 255, 255, 0.50);
+
+  /* 进度条 */
+  --track-health: rgba(255, 255, 255, 0.30);
+  --track-armor: rgba(255, 255, 255, 0.18);
+  --bar-outline: rgba(0, 0, 0, 0.45);
+
+  /* 阴影 */
+  --shadow-text: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 1px rgba(0, 0, 0, 0.9);
+  /* 压在武器模型上用的 1px 深色描边。刻意不写 calc()，
+     因为 calc 出现在 text-shadow 里会让整条声明被丢弃 */
+  --outline-text: -1px 0 0 rgba(0, 0, 0, 0.92), 1px 0 0 rgba(0, 0, 0, 0.92),
+                  0 -1px 0 rgba(0, 0, 0, 0.92), 0 1px 0 rgba(0, 0, 0, 0.92),
+                  0 2px 4px rgba(0, 0, 0, 0.8);
+
+  --ct: #7FB2E5;
+  --t: #E3A03C;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--font-hud);
+  -webkit-font-smoothing: antialiased;
+}
+
+body { user-select: none; cursor: default; }
+
+.hud {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  transition: opacity 180ms linear;
+  /* fill 模式（4:3 拉伸）由 JS 把 .hud 固定成虚拟画布尺寸并整体 scaleX，
+     所以这里要允许 JS 用 left/top/width 接管；JS 在非 fill 模式会清回 inset:0。 */
+  transform-origin: left top;
+}
+
+.hud.hidden { opacity: 0; }
+
+/* ============================================================
+   底栏：半透明深灰横条，左右两端渐隐羽化，无硬边缘
+   ============================================================ */
+/* 底栏通用：左边缘固定在屏幕最左，内容用 padding 推到位，
+   这样底栏自身的渐隐和内容的左对齐可以同时成立。
+   宽度是 shrink-to-fit，所以金额位数变化时只向右延伸，左边界不动。 */
+.hud-strip {
+  position: absolute;
+  left: 0;
+  padding-left: calc(var(--inset-x) + var(--bar-pad-l) + var(--offx, 0px));
+  background: linear-gradient(90deg,
+    rgba(var(--bar-color), 0) 0%,
+    rgba(var(--bar-color), var(--bar-alpha)) calc(84px * var(--scale)),
+    rgba(var(--bar-color), var(--bar-alpha)) calc(100% - calc(var(--fade-r, 112px) * var(--scale))),
+    rgba(var(--bar-color), 0) 100%);
+}
+
+.hud-bar {
+  /* 注意：--fade-r 必须带单位（px），否则 calc(100% - 数字) 非法，
+     整条 background 声明会被丢弃、底栏直接消失 */
+  position: absolute;
+  bottom: calc(var(--inset-y) + var(--offy, 0px));
+  height: var(--bar-h);
+  display: flex;
+  align-items: center;
+  /* 建立层叠上下文：红渐变 ::after 只能压在本底栏内部，
+     且必须低于模块内容（层级：底栏底色 → 红渐变 → 图标/槽 → 数值/填充） */
+  isolation: isolate;
+}
+
+.bar-left {
+  --fade-r: 112px;
+  padding-right: var(--bar-pad-r);
+  gap: calc(30px * var(--scale));
+}
+
+.bar-right {
+  left: auto;
+  right: 0;
+  padding-right: calc(var(--inset-x) - var(--offx, 0px) + var(--bar-pad-l));
+  padding-left: var(--bar-pad-r);
+  justify-content: flex-end;
+  background: linear-gradient(270deg,
+    rgba(var(--bar-color), 0) 0%,
+    rgba(var(--bar-color), var(--bar-alpha)) calc(84px * var(--scale)),
+    rgba(var(--bar-color), var(--bar-alpha)) calc(100% - calc(112px * var(--scale))),
+    rgba(var(--bar-color), 0) 100%);
+}
+
+/* 低血量预警：底栏左侧叠一层暗红渐变，向右消退 */
+.hud-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 170ms linear;
+  /* 淡入点要和底栏自身的羽化对齐，否则左边缘会露出一道色差 */
+  background: linear-gradient(90deg,
+    rgba(112, 15, 11, 0) 0,
+    rgba(112, 15, 11, calc(0.68 * (0.55 + 0.45 * var(--glow)))) calc(84px * var(--scale)),
+    rgba(104, 14, 10, calc(0.56 * (0.55 + 0.45 * var(--glow)))) calc(320px * var(--scale)),
+    rgba(96, 13, 9, calc(0.24 * (0.55 + 0.45 * var(--glow)))) calc(530px * var(--scale)),
+    rgba(90, 12, 8, 0) calc(740px * var(--scale)));
+}
+
+.bar-left.is-critical::after { opacity: 1; }
+
+/* ============================================================
+   模块：图标 → 数值 → 进度条
+   ============================================================ */
+.module {
+  position: relative;
+  z-index: 1;              /* 必须高于 .hud-bar::after 的红渐变 */
+  display: flex;
+  align-items: center;
+  gap: calc(16px * var(--scale));
+}
+
+.module .bar { margin-left: calc(12px * var(--scale)); }
+
+.module .val {
+  color: var(--white);
+  font-size: calc(58px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--shadow-text);
+}
+
+.module.health .val { min-width: calc(88px * var(--scale)); }
+.module.armor  .val { min-width: calc(68px * var(--scale)); }
+
+/* ---- 图标：浅灰填充 + 白色细描边 ---- */
+.ico {
+  display: block;
+  flex: none;
+  overflow: visible;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65));
+  transition: filter 140ms linear;
+}
+
+.ico path {
+  fill: var(--ico-fill);
+  stroke: var(--ico-stroke);
+  stroke-width: 1.9;
+  stroke-linejoin: round;
+  transition: fill 140ms linear, stroke 140ms linear;
+}
+
+.ico-health {
+  width: calc(34px * var(--scale));
+  height: calc(33px * var(--scale));
+}
+
+.ico-armor {
+  width: calc(34px * var(--scale));
+  height: calc(38px * var(--scale));
+}
+
+/* 头盔剪影：同色系但更亮一点，才看得出来 */
+.ico-armor .helmet {
+  fill: var(--ico-helmet);
+  stroke: none;
+  display: none;
+}
+
+.ico-armor.has-helmet .helmet { display: block; }
+
+/* ---- 进度条 ---- */
+.bar {
+  display: block;
+  width: calc(178px * var(--scale));
+  height: calc(20px * var(--scale));
+  border-radius: calc(2px * var(--scale));
+  border: calc(1px * var(--scale)) solid var(--bar-outline);
+  overflow: hidden;
+  transition: box-shadow 140ms linear, border-color 140ms linear;
+}
+
+.health-bar { background: var(--track-health); }
+.armor-bar  { background: var(--track-armor); }
+
+.bar > i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--white);
+  transition: width 120ms linear, background 120ms linear;
+}
+
+/* ============================================================
+   血量分级
+   ============================================================ */
+
+/* 中血量（<=50）：填充转红，图标略压暗，无发光 */
+.module.health.is-hurt .ico-health path { fill: rgba(232, 238, 242, 0.20); }
+.module.health.is-hurt .health-bar > i { background: var(--red); }
+
+/* 低血量（<=25）：红填充 + 红色外发光 */
+.module.health.is-critical .health-bar > i { background: var(--red); }
+
+.module.health.is-critical .ico-health path {
+  fill: #8E1A14;
+  stroke: rgba(255, 96, 78, 0.85);
+}
+
+/* 注意：辉光不写在这里。
+   Chromium 会把 calc() 嵌在 text-shadow / drop-shadow 里的整条声明判为无效
+   （同样是 calc，放进 box-shadow 却正常）。所以数字和十字图标的辉光由 hud.js
+   算好真实像素值后用内联样式注入，见 applyHealthGlow()。
+   这里只负责填充与描边的变色。 */
+
+.module.health.is-critical .health-bar {
+  border-color: rgba(255, 104, 86, 0.6);
+  box-shadow:
+    0 0 calc(9px * var(--scale)) rgba(var(--glow-rgb), calc(0.5 + 0.5 * var(--glow))),
+    0 0 calc(22px * var(--scale)) rgba(var(--glow-rgb), calc(0.24 + 0.46 * var(--glow)));
+}
+
+/* ============================================================
+   护甲：0 甲时保留整块，盾牌变灰、槽放空，无预警色无发光
+   ============================================================ */
+.module.armor.is-empty .ico-armor .shield {
+  fill: rgba(232, 238, 242, 0.20);
+  stroke: rgba(255, 255, 255, 0.62);
+}
+
+.module.armor.is-empty .val { color: rgba(243, 246, 248, 0.92); }
+
+/* ============================================================
+   拆弹器
+   ============================================================ */
+.module.kit { opacity: 0.95; }
+
+.ico-kit {
+  position: relative;
+  display: block;
+  width: calc(30px * var(--scale));
+  height: calc(24px * var(--scale));
+  border: calc(2px * var(--scale)) solid rgba(255, 255, 255, 0.85);
+  border-radius: calc(3px * var(--scale));
+  background: rgba(232, 238, 242, 0.28);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65));
+}
+
+.ico-kit::after {
+  content: "";
+  position: absolute;
+  right: calc(-3px * var(--scale));
+  top: calc(5px * var(--scale));
+  width: calc(11px * var(--scale));
+  height: calc(5px * var(--scale));
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: calc(1px * var(--scale));
+}
+
+/* ============================================================
+   右下：连杀骷髅 + 弹药
+   无实体底栏 —— 元素直接压在武器模型上，靠 1px 深色描边保证可读性。
+   层级：弹匣数（最强）> 备弹数 > 骷髅徽章 > 子弹装饰图标
+   ============================================================ */
+#rightBar {
+  /* 和金钱 / 血甲同一种羽化底栏 */
+  padding-right: calc(var(--inset-x) - var(--offx, 0px) + calc(20px * var(--scale)));
+  padding-left: calc(96px * var(--scale));
+}
+
+.ammo-block {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: calc(18px * var(--scale));
+}
+
+/* ---- 连杀骷髅徽章：每击杀 1 人新增 1 枚，最多 5 枚 ---- */
+.kills {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(1px * var(--scale));
+}
+
+.badge {
+  display: none;
+  width: calc(30px * var(--scale));
+  height: calc(35px * var(--scale));
+}
+
+.badge.on { display: block; }
+
+/* 新徽章：0.2 秒淡入 + 轻微放大回弹；已存在的徽章保持静止 */
+.badge.on.fresh {
+  animation: badge-in 200ms cubic-bezier(0.2, 0.9, 0.3, 1.35) both;
+}
+
+@keyframes badge-in {
+  0%   { opacity: 0; transform: scale(0.65); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge.on.fresh { animation: none; }
+}
+
+/* ---- 弹匣 / 备弹 ---- */
+.clipwrap {
+  display: flex;
+  align-items: baseline;
+  gap: calc(5px * var(--scale));
+}
+
+.clip {
+  color: var(--white);
+  font-size: calc(62px * var(--scale));
+  font-weight: 700;
+  line-height: 0.9;
+  min-width: calc(80px * var(--scale));
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--outline-text);
+  transition: color 110ms linear;
+}
+
+.clip.is-empty { color: var(--red); }
+
+.slash,
+.reserve {
+  color: var(--white);
+  font-size: calc(30px * var(--scale));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--outline-text);
+}
+
+/* ---- 子弹装饰：固定 5 枚，斜排上升，全程静止 ---- */
+.bullets {
+  display: flex;
+  align-items: flex-end;
+  margin-left: calc(4px * var(--scale));
+}
+
+.bullets svg {
+  width: calc(15px * var(--scale));
+  height: calc(33px * var(--scale));
+  margin-left: calc(-2px * var(--scale));
+  transform-origin: 50% 100%;
+}
+
+.bullets svg:first-child { margin-left: 0; }
+
+/* 每颗各自倾斜，整体水平一排（底部对齐，不做上下错位） */
+.bullets svg:nth-child(n) { transform: rotate(20deg); }
+
+/* ============================================================
+   金钱模块（左侧信息组，位于血量护甲底栏上方，左边缘与之一条直线）
+
+   三行结构，常态只显示中间那行：
+     奖励行（绿，在上）  ← 击杀奖励 / 收入
+     主金额（白，居中）
+     扣除行（红，在下）  ← 购买支出
+   底栏高度随行数线性过渡。
+   ============================================================ */
+.money-module {
+  --fade-r: 56px;
+  bottom: calc(var(--bar-h) + var(--inset-y) + var(--offy, 0px) + calc(10px * var(--scale)));
+  padding-right: calc(58px * var(--scale));
+  padding-top: calc(11px * var(--scale));
+  padding-bottom: calc(11px * var(--scale));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(3px * var(--scale));
+  isolation: isolate;
+}
+
+.money-line {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;      /* $ 与数字底部基线齐平 */
+  white-space: nowrap;
+  color: var(--white);
+  text-shadow: var(--shadow-text);
+  font-size: calc(46px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 符号与数字同字号同色，确保基线齐平、宽度均匀 */
+.money-line .sym { font-size: inherit; }
+
+.money-line.delta { font-size: calc(38px * var(--scale)); }
+
+.money-line.reward { color: var(--money-gain); }
+.money-line.spend  { color: var(--money-spend); }
+
+/* 行高折叠动画：0fr → 1fr 让底栏高度平滑过渡，不会生硬跳变 */
+.line-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 170ms linear;
+}
+
+.line-wrap.is-on { grid-template-rows: 1fr; }
+
+.line-wrap > .money-line {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* 附加行动效：出现淡入 + 轻微位移，停留后淡出（无发光，纯色区分状态） */
+.money-line.delta {
+  opacity: 0;
+  transition: opacity 240ms linear, transform 240ms ease-out;
+}
+
+.money-line.reward { transform: translateY(9px); }
+.money-line.spend  { transform: translateY(-6px); }
+
+.money-line.delta.is-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 120ms linear,
+              transform 230ms cubic-bezier(0.22, 0.9, 0.32, 1.25);  /* 轻微回弹 */
+}
+
+.money-line.delta.is-out { opacity: 0; }
+.money-line.spend.is-out  { transform: translateY(8px); }
+.money-line.reward.is-out { transform: translateY(6px); }
+
+/* ============================================================
+   顶部比分面板
+   三栏对称：CT块 | 时间+比分块 | T块
+   实心色块 + 硬边。块面质感靠「顶部一线高光 + 底部压暗 + 细内描边 + 轻微外投影」，
+   不用大半径内阴影（那会把色块糊成渐变，显得脏）。
+   ============================================================ */
+.top {
+  position: absolute;
+  top: var(--inset-y);
+  left: 50%;
+  transform: translateX(-50%)
+             translate(var(--m-scoreboard-x, 0px), var(--m-scoreboard-y, 0px))
+             rotate(var(--m-scoreboard-rot, 0deg))
+             scale(var(--m-scoreboard-sx, 1), var(--m-scoreboard-sy, 1));
+  transform-origin: top center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scoreboard {
+  display: flex;
+  align-items: stretch;
+  height: calc(84px * var(--scale));
+}
+
+/* 平面化：纯色块 + 近黑分隔缝，不做高光 / 暗角 / 投影（不需要拟物感） */
+.team-block,
+.center-block {
+  box-shadow: none;
+}
+
+.team-block {
+  position: relative;
+  width: calc(102px * var(--scale));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.team-block.ct { background-color: var(--ct-block, #1F4A78); }   /* 冷色系蓝 */
+.team-block.t  { background-color: var(--t-block, #C8A63C); }   /* 暖色系金 */
+
+/* 阵营徽记：亮的，铺满色块，压在文字之下 */
+.team-block .mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(88px * var(--scale));
+  height: calc(56px * var(--scale));
+  transform: translate(-50%, -54%);
+  pointer-events: none;
+}
+
+.team-block.ct .mark { color: rgba(150, 216, 255, 0.55); }
+.team-block.t  .mark { color: rgba(255, 238, 168, 0.70); }
+
+.hud.mark-off .mark { display: none; }
+
+.team-block .alive {
+  position: relative;
+  z-index: 1;
+  color: var(--white);
+  font-size: calc(40px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(1px * var(--scale)) calc(3px * var(--scale)) rgba(0, 0, 0, 0.75);
+  transition: opacity 180ms linear;
+}
+
+.team-block .alive.dim { opacity: 0.35; transition: opacity 0ms; }
+
+/* 「存活」跟随阵营色 */
+.team-block .label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(4px * var(--scale));
+  display: none;
+  text-align: center;
+  font-size: calc(15px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-shadow: 0 calc(1px * var(--scale)) calc(2px * var(--scale)) rgba(0, 0, 0, 0.7);
+}
+
+.team-block.ct .label { color: #8FD4FF; }
+.team-block.t  .label { color: #6B5410; }
+
+.team-block.show-count .alive { font-size: calc(50px * var(--scale)); letter-spacing: 0; }
+.team-block.show-count .label { display: block; }
+
+/* ---- 中间时间 + 比分块 ---- */
+.center-block {
+  width: calc(178px * var(--scale));
+  display: flex;
+  flex-direction: column;
+  background-color: var(--center-block, #1C1E22);
+  border-left: calc(3px * var(--scale)) solid #0B0C0E;
+  border-right: calc(3px * var(--scale)) solid #0B0C0E;
+}
+
+.time-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6px * var(--scale));
+  border-bottom: calc(3px * var(--scale)) solid #0B0C0E;
+}
+
+.time {
+  color: var(--white);
+  font-size: calc(33px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(2px * var(--scale)) calc(3px * var(--scale)) rgba(0, 0, 0, 0.55);
+  transition: color 140ms linear;
+}
+
+.time-cell.empty .time,
+.time-cell.empty .ico-bomb { visibility: hidden; }
+
+.time-cell.is-bomb .time,
+.time-cell.is-low  .time { color: #FF4A3C; }
+.time-cell.is-freeze .time { color: rgba(243, 246, 248, 0.72); }
+
+.ico-bomb {
+  position: relative;
+  display: none;
+  width: calc(15px * var(--scale));
+  height: calc(15px * var(--scale));
+  border-radius: calc(3px * var(--scale));
+  background: #FF4A3C;
+}
+
+.time-cell.is-bomb .ico-bomb { display: block; }
+
+.ico-bomb::after {
+  content: "";
+  position: absolute;
+  top: calc(3px * var(--scale));
+  left: calc(3px * var(--scale));
+  width: calc(4px * var(--scale));
+  height: calc(4px * var(--scale));
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* ---- 下半格：双方比分 ---- */
+.score-cells {
+  flex: 1;
+  display: flex;
+  background-color: #0B0C0E;
+}
+
+.score-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.score-cell.ct {
+  background-color: #23262C;
+  border-right: calc(3px * var(--scale)) solid #0B0C0E;
+}
+
+.score-cell.t {
+  background-color: #4C4A22;
+}
+
+.score {
+  font-size: calc(28px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(2px * var(--scale)) calc(3px * var(--scale)) rgba(0, 0, 0, 0.5);
+  transition: transform 130ms ease-out, filter 130ms ease-out;
+}
+
+.score-cell.ct .score { color: #DCE0F0; }   /* 浅蓝，对应 CT 冷色 */
+.score-cell.t  .score { color: #F2C63C; }   /* 浅黄，对应 T 暖色 */
+
+/* 比分变化的强调：一帧放大提亮 */
+.score.bump {
+  transform: scale(1.3);
+  filter: brightness(1.55);
+}
+
+/* ============================================================
+   组件开关
+   ============================================================ */
+[data-show].off { display: none !important; }
+
+/* ============================================================
+   右侧武器栏（纯文字方案，零图标素材）
+   1-5 号竖向槽位，右对齐屏幕边缘，编号在最右、文字在编号左侧。
+   三级状态只用颜色 / 字重 / 透明度区分，切换只做 0.15s 颜色过渡，
+   无位移、无缩放，保持界面稳定。
+   ============================================================ */
+.weapon-bar {
+  position: absolute;
+  right: calc(var(--inset-x) - var(--offx, 0px) + calc(20px * var(--scale)));
+  bottom: calc(var(--bar-h) + var(--inset-y) + var(--offy, 0px) + calc(16px * var(--scale)));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(8px * var(--scale));
+}
+
+.slot {
+  display: flex;
+  align-items: baseline;
+  gap: calc(14px * var(--scale));
+  min-height: calc(30px * var(--scale));
+}
+
+/* 状态 2：已拥有但未手持 —— 中灰、常规字重、约 60% 透明度 */
+.slot .wtext {
+  font-size: calc(42px * var(--scale));
+  font-weight: 400;
+  line-height: 1;
+  color: var(--wtext-dim, rgba(242, 245, 247, 0.6));
+  transition: color 150ms linear;
+}
+
+/* 投掷物单字：约主武器的 2/3 */
+.slot[data-slot="4"] .wtext { font-size: calc(28px * var(--scale)); }
+
+/* 编号做成固定宽度的右对齐列，逐行叠成一条整齐的竖线，与左侧文字同基线 */
+.slot .wnum {
+  min-width: calc(22px * var(--scale));
+  text-align: right;
+  font-size: calc(22px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  color: var(--white);
+  transition: color 150ms linear;
+}
+
+/* 状态 1：当前手持 —— 纯白、粗体、不透明。
+   投掷物槽（4 号）例外：那一行有好几个字，整串一起变白很扎眼，
+   改成只点亮当前手持的那一颗（.gchar.hot），其余保持暗色。 */
+.slot.active:not([data-slot="4"]) .wtext { color: var(--wtext-color, var(--white)); font-weight: 700; }
+
+/* 状态 3：未拥有 / 已消耗 —— 文字留空，键位编号保留浅灰 */
+/* 没有装备的槽位整行收起，后面的顺位顶上；捡到后按顺位插回 */
+.slot.empty { display: none; }
+
+/* 投掷物：单字 + 间隔号，分隔符颜色与文字同步 */
+.wtext.grenades { display: inline-flex; align-items: baseline; }
+.gchar { display: inline-block; transition: color 150ms linear; }
+.gchar.g-in { animation: g-in 160ms ease-out both; }
+.gsep { margin: 0 calc(3px * var(--scale)); opacity: 0.8; transition: color 150ms linear; }
+
+/* 只点亮当前手持的那一颗投掷物，其余保持未手持的暗色 */
+.gchar.hot { color: var(--wtext-color, var(--white)); font-weight: 700; }
+.gchar.hot + .gsep,
+.gsep:has(+ .gchar.hot) { color: var(--wtext-color, var(--white)); }
+
+@keyframes g-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gchar.g-in { animation: none; }
+}
+
+/* ============================================================
+   每块 HUD 的独立位移 / 非等比缩放
+   锚点放在各模块靠近屏幕边缘的角上，缩放时不会把模块推离边缘。
+   位移在 scale 之前生效，所以位移量是屏幕像素、不随缩放变化。
+   ============================================================ */
+#bottomBar {
+  transform: translate(var(--m-vitals-x, 0px), var(--m-vitals-y, 0px))
+             rotate(var(--m-vitals-rot, 0deg))
+             scale(var(--m-vitals-sx, 1), var(--m-vitals-sy, 1));
+  transform-origin: bottom left;
+}
+
+#moneyModule {
+  transform: translate(var(--m-money-x, 0px), var(--m-money-y, 0px))
+             rotate(var(--m-money-rot, 0deg))
+             scale(var(--m-money-sx, 1), var(--m-money-sy, 1));
+  transform-origin: bottom left;
+}
+
+#rightBar {
+  transform: translate(var(--m-ammo-x, 0px), var(--m-ammo-y, 0px))
+             rotate(var(--m-ammo-rot, 0deg))
+             scale(var(--m-ammo-sx, 1), var(--m-ammo-sy, 1));
+  transform-origin: bottom right;
+}
+
+#weaponBar {
+  transform: translate(var(--m-weaponList-x, 0px), var(--m-weaponList-y, 0px))
+             rotate(var(--m-weaponList-rot, 0deg))
+             scale(var(--m-weaponList-sx, 1), var(--m-weaponList-sy, 1));
+  transform-origin: bottom right;
+}
+
+/* 武器栏默认不带描边；想开回来就设 hud.weaponTextOutline = true */
+.hud.woutline .slot .wtext,
+.hud.woutline .slot .wnum { text-shadow: var(--outline-text); }
+
+/* ============================================================
+   自定义文本元素
+   9 个锚点 + 位移 + 缩放，内容用 {变量} 插值。
+   位移是屏幕像素、不受缩放影响；字号跟着全局 --scale 走。
+   每项都有独立的 transform-origin，放大时不会把文本推离边缘。
+   ============================================================ */
+.custom-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.custom-item {
+  position: absolute;
+  isolation: isolate;
+  display: block;
+  font-size: calc(var(--ci-size, 28px) * var(--scale));
+  font-weight: 700;
+  line-height: 1.18;
+  color: var(--ci-color, #FFFFFF);
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--outline-text);
+  transform: rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+}
+
+.custom-item.off { display: none; }
+
+/* 关掉描边时退回普通投影 */
+.custom-item.thin { text-shadow: var(--shadow-text); }
+
+.custom-item.al-left   { text-align: left; }
+.custom-item.al-center { text-align: center; }
+.custom-item.al-right  { text-align: right; }
+
+/* ---- 9 个锚点 ---- */
+.custom-item.a-tl {
+  left: calc(var(--inset-x, 0px) + var(--ci-x, 0px));
+  top: calc(var(--inset-y, 0px) + var(--ci-y, 0px));
+  transform-origin: left top;
+}
+.custom-item.a-tc {
+  left: calc(50% + var(--ci-x, 0px));
+  top: calc(var(--inset-y, 0px) + var(--ci-y, 0px));
+  transform: translateX(-50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: center top;
+}
+.custom-item.a-tr {
+  right: calc(var(--inset-x, 0px) - var(--ci-x, 0px));
+  top: calc(var(--inset-y, 0px) + var(--ci-y, 0px));
+  transform-origin: right top;
+}
+
+.custom-item.a-ml {
+  left: calc(var(--inset-x, 0px) + var(--ci-x, 0px));
+  top: calc(50% + var(--ci-y, 0px));
+  transform: translateY(-50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: left center;
+}
+.custom-item.a-mc {
+  left: calc(50% + var(--ci-x, 0px));
+  top: calc(50% + var(--ci-y, 0px));
+  transform: translate(-50%, -50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: center;
+}
+.custom-item.a-mr {
+  right: calc(var(--inset-x, 0px) - var(--ci-x, 0px));
+  top: calc(50% + var(--ci-y, 0px));
+  transform: translateY(-50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: right center;
+}
+
+.custom-item.a-bl {
+  left: calc(var(--inset-x, 0px) + var(--ci-x, 0px));
+  bottom: calc(var(--inset-y, 0px) - var(--ci-y, 0px));
+  transform-origin: left bottom;
+}
+.custom-item.a-bc {
+  left: calc(50% + var(--ci-x, 0px));
+  bottom: calc(var(--inset-y, 0px) - var(--ci-y, 0px));
+  transform: translateX(-50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: center bottom;
+}
+.custom-item.a-br {
+  right: calc(var(--inset-x, 0px) - var(--ci-x, 0px));
+  bottom: calc(var(--inset-y, 0px) - var(--ci-y, 0px));
+  transform-origin: right bottom;
+}
+
+/* 可选：给自定义文本垫一条两端渐隐的暗色底栏（跟金钱/血甲同一套语言）。
+   左侧锚点向右渐隐，右侧锚点向左渐隐。 */
+.custom-item.has-bar::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: calc(-20px * var(--scale));
+  right: calc(-30px * var(--scale));
+  top: calc(-9px * var(--scale));
+  bottom: calc(-9px * var(--scale));
+  background: linear-gradient(90deg,
+    rgba(var(--ci-bar, 14, 19, 26), var(--ci-bar-a, 0.5)) 0%,
+    rgba(var(--ci-bar, 14, 19, 26), var(--ci-bar-a, 0.5)) 58%,
+    rgba(var(--ci-bar, 14, 19, 26), 0) 100%);
+}
+.custom-item.has-bar.a-tr::before,
+.custom-item.has-bar.a-mr::before,
+.custom-item.has-bar.a-br::before {
+  left: calc(-30px * var(--scale));
+  right: calc(-20px * var(--scale));
+  background: linear-gradient(270deg,
+    rgba(var(--ci-bar, 14, 19, 26), var(--ci-bar-a, 0.5)) 0%,
+    rgba(var(--ci-bar, 14, 19, 26), var(--ci-bar-a, 0.5)) 58%,
+    rgba(var(--ci-bar, 14, 19, 26), 0) 100%);
+}
+
+/* ============================================================
+   队友 / 对手名单面板
+   数据来自 GSI 的 allplayers —— 只有死亡观战 / GOTV / 回放时才有，
+   存活期间游戏不下发，此时整块面板隐藏（不是显示空壳）。
+   默认贴右上角，行内右侧贴屏幕边，所以底栏向左渐隐。
+   ============================================================ */
+.roster {
+  position: absolute;
+  top: calc(var(--inset-y) + var(--offy, 0px));
+  right: calc(var(--inset-x) - var(--offx, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(4px * var(--scale));
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.roster.off { display: none; }
+
+#rosterPanel {
+  transform: translate(var(--m-roster-x, 0px), var(--m-roster-y, 0px))
+             rotate(var(--m-roster-rot, 0deg))
+             scale(var(--m-roster-sx, 1), var(--m-roster-sy, 1));
+  transform-origin: top right;
+}
+
+.roster-row {
+  display: flex;
+  align-items: center;
+  gap: calc(13px * var(--scale));
+  padding: calc(4px * var(--scale)) calc(15px * var(--scale)) calc(4px * var(--scale)) calc(40px * var(--scale));
+  background: linear-gradient(270deg,
+    rgba(var(--roster-bar, 14, 19, 26), var(--roster-bar-a, 0.5)) 0%,
+    rgba(var(--roster-bar, 14, 19, 26), var(--roster-bar-a, 0.5)) calc(100% - calc(32px * var(--scale))),
+    rgba(var(--roster-bar, 14, 19, 26), 0) 100%);
+}
+
+.roster-row.dead { opacity: 0.42; }
+.roster-row.self .roster-name { color: var(--roster-self, #E8C46A); }
+.roster-row.dead .roster-name { color: var(--roster-dead, #7A828B); }
+
+.roster-dot {
+  flex: 0 0 auto;
+  width: calc(7px * var(--scale));
+  height: calc(7px * var(--scale));
+  border-radius: 50%;
+  background: var(--roster-alive, #F2F5F7);
+  box-shadow: 0 0 calc(7px * var(--scale)) rgba(242, 245, 247, 0.45);
+}
+.roster-row.dead .roster-dot {
+  background: var(--roster-dead, #7A828B);
+  box-shadow: none;
+}
+
+.roster-name {
+  flex: 0 0 auto;
+  width: calc(112px * var(--scale));
+  font-size: calc(15px * var(--scale));
+  font-weight: 600;
+  color: var(--roster-text, #FFFFFF);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 列宽要按「中文名最长的那个」留余量（比如 M4A1消音型 = 沙漠之鹰），
+   否则文字会往左溢出、压到名字列上。 */
+.roster-weapon {
+  flex: 0 0 auto;
+  width: calc(98px * var(--scale));
+  font-size: calc(14px * var(--scale));
+  font-weight: 600;
+  color: var(--roster-accent, #4C8DFF);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.roster-hp,
+.roster-armor,
+.roster-kda,
+.roster-money {
+  flex: 0 0 auto;
+  font-size: calc(14px * var(--scale));
+  font-variant-numeric: tabular-nums;
+  color: var(--roster-dim, rgba(242, 245, 247, 0.55));
+  text-align: right;
+  white-space: nowrap;
+}
+.roster-hp    { width: calc(34px * var(--scale)); }
+.roster-armor { width: calc(44px * var(--scale)); }
+.roster-kda   { width: calc(68px * var(--scale)); }
+.roster-money { width: calc(52px * var(--scale)); }
+
+/* 低血量在名单里也要一眼看见 */
+.roster-row.hurt .roster-hp { color: #E8231C; font-weight: 700; }
+
+.roster-bomb {
+  flex: 0 0 auto;
+  font-size: calc(11px * var(--scale));
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #F0B23A;
+}
+
+.roster-group {
+  padding: calc(5px * var(--scale)) calc(15px * var(--scale)) 0;
+  font-size: calc(11.5px * var(--scale));
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--roster-accent, #4C8DFF);
+}
+
+/* ============================================================
+   击杀 / 死亡播报
+   同一帧只播一条，优先级 连杀 > 击杀 > 阵亡 > 助攻 > MVP，
+   免得一次三杀同时弹四条把画面塞满。
+   ============================================================ */
+.event-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.ev-item {
+  position: absolute;
+  font-size: calc(var(--ev-size, 30px) * var(--scale));
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--ev-color, #FFFFFF);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(2px * var(--scale)) calc(7px * var(--scale)) rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  filter: brightness(1.5);
+  transition: opacity var(--ev-fade, 240ms) ease, filter var(--ev-fade, 240ms) ease;
+}
+
+/* 出现瞬间亮一下再回落，比单纯淡入更"抓住眼睛" */
+.ev-item.is-on {
+  opacity: 1;
+  filter: brightness(1);
+}
+
+/* ---- 9 个锚点（和自定义文本元素同一套约定）---- */
+.ev-item.a-tl { left: calc(var(--inset-x, 0px) + var(--ev-x, 0px)); top: calc(var(--inset-y, 0px) + var(--ev-y, 0px)); }
+.ev-item.a-tr { right: calc(var(--inset-x, 0px) - var(--ev-x, 0px)); top: calc(var(--inset-y, 0px) + var(--ev-y, 0px)); }
+.ev-item.a-tc {
+  left: calc(50% + var(--ev-x, 0px));
+  top: calc(var(--inset-y, 0px) + var(--ev-y, 0px));
+  transform: translateX(-50%);
+}
+
+.ev-item.a-ml {
+  left: calc(var(--inset-x, 0px) + var(--ev-x, 0px));
+  top: calc(50% + var(--ev-y, 0px));
+  transform: translateY(-50%);
+}
+.ev-item.a-mc {
+  left: calc(50% + var(--ev-x, 0px));
+  top: calc(50% + var(--ev-y, 0px));
+  transform: translate(-50%, -50%);
+}
+.ev-item.a-mr {
+  right: calc(var(--inset-x, 0px) - var(--ev-x, 0px));
+  top: calc(50% + var(--ev-y, 0px));
+  transform: translateY(-50%);
+}
+
+.ev-item.a-bl { left: calc(var(--inset-x, 0px) + var(--ev-x, 0px)); bottom: calc(var(--inset-y, 0px) - var(--ev-y, 0px)); }
+.ev-item.a-br { right: calc(var(--inset-x, 0px) - var(--ev-x, 0px)); bottom: calc(var(--inset-y, 0px) - var(--ev-y, 0px)); }
+.ev-item.a-bc {
+  left: calc(50% + var(--ev-x, 0px));
+  bottom: calc(var(--inset-y, 0px) - var(--ev-y, 0px));
+  transform: translateX(-50%);
+}
+
+/* ============================================================
+   进阶外观（config.adv.enabled 打开时才有；关闭时这些类不会出现在 DOM 上）
+   —— 图标 / 字重字距 / 斜体 / 描边 / 弯曲。入场、脉冲、抖动、震动走 WAAPI，见 hud.js。
+   ============================================================ */
+.ev-item.ev-adv {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ev-gap, 10px);
+  font-weight: var(--ev-weight, 700);
+  letter-spacing: var(--ev-ls, 0.06em);
+  transition: none;          /* 进阶路径用 WAAPI，关掉 CSS 过渡以免两边打架 */
+  filter: none;
+}
+
+.ev-item.ev-adv.ev-italic { font-style: italic; }
+.ev-item.ev-adv.ev-ico-right { flex-direction: row-reverse; }
+
+.ev-item.ev-adv .ev-ico {
+  font-size: calc(1em * var(--ev-icon-size, 1));
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.ev-item.ev-adv .ev-curve {
+  display: block;
+  overflow: visible;
+  flex: 0 0 auto;
+}
+.ev-item.ev-adv .ev-curve text { font-family: inherit; }
+
+/* 深色描边：用 stroke + paint-order=stroke 让描边压在填充下面，字不会变细 */
+.ev-item.ev-adv.ev-outline .ev-txt,
+.ev-item.ev-adv.ev-outline .ev-ico {
+  -webkit-text-stroke: var(--ev-ol-w, 2px) var(--ev-ol-c, #000000);
+  paint-order: stroke fill;
+}
+
+/* 自定义图标（来自图标库）：SVG 或图片，都按 1em 高度对齐文字 */
+.ev-item.ev-adv .ev-ico-svg { display: inline-flex; align-items: center; }
+.ev-item.ev-adv .ev-ico-svg svg { height: calc(1em * var(--ev-icon-size, 1)); width: auto; display: block; }
+.ev-item.ev-adv .ev-ico-img { height: calc(1em * var(--ev-icon-size, 1)); width: auto; object-fit: contain; }
+
+/* ============================================================
+   画图生成的形状元素（config.shapes）
+   —— 每块是一张自绘 SVG，锚点 / 位移 / 缩放 / 旋转在这里内联定位。
+   ============================================================ */
+.shape-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.shape-item {
+  position: absolute;
+  isolation: isolate;
+}
+
+.shape-item.off { display: none; }
+
+.shape-item .shape-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* 形状里的文字默认继承 HUD 字体；进阶覆盖由 --si-* 变量驱动 */
+.shape-item text {
+  font-family: var(--font-hud, inherit);
+  font-weight: var(--si-weight, 700);
+  letter-spacing: var(--si-ls, 0em);
+}
+.shape-item.si-italic text { font-style: italic; }
+.shape-item.si-outline text {
+  -webkit-text-stroke: var(--si-ol-w, 2px) var(--si-ol-c, #000000);
+  paint-order: stroke fill;
+}
+
+/* ============================================================
+   自定义文本元素的进阶外观（只有显式配置了「custom.N」覆盖才出现）
+   ============================================================ */
+.custom-item.ci-adv { display: inline-flex; align-items: center; gap: var(--ci-gap, 8px); }
+.custom-item.ci-adv.ci-ico-right { flex-direction: row-reverse; }
+.custom-item.ci-adv .ci-txt { font-weight: var(--ci-weight, 700); letter-spacing: var(--ci-ls, 0em); }
+.custom-item.ci-adv.ci-italic .ci-txt { font-style: italic; }
+.custom-item.ci-adv.ci-outline .ci-txt,
+.custom-item.ci-adv.ci-outline .ci-ico {
+  -webkit-text-stroke: var(--ci-ol-w, 2px) var(--ci-ol-c, #000000);
+  paint-order: stroke fill;
+}
+.custom-item.ci-adv .ci-ico { flex: 0 0 auto; font-size: 1.1em; line-height: 1; }
+.custom-item.ci-adv .ci-ico svg { height: calc(1em * var(--ci-icon-size, 1)); width: auto; display: block; }
+.custom-item.ci-adv .ci-ico img { height: calc(1em * var(--ci-icon-size, 1)); width: auto; object-fit: contain; }
+
+/* ============================================================
+   预览模式（设置 → 预览 开的那个窗口）
+   真实覆盖层没有 body.preview-mode，以下规则一条都不生效。
+   ============================================================ */
+
+/* 默认隐藏：真实 HUD 里这个工具条根本不该出现 */
+.preview-bar { display: none; }
+
+/* 整幅墨黑画框：把预览窗口裱成一块「印版」。纯装饰、不吃鼠标。 */
+body.preview-mode::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  border: 2px solid #111111;
+}
+
+/* ---- 工具条：报刊风（纸白底 + 2px 墨线 + 直角等宽按钮）----
+   注意：这里刻意不 @import 网络字体 —— hud.css 同时服务真实覆盖层，
+   不想为一根工具条让游戏内也去下载字体。用系统衬线/等宽兜底。 */
+body.preview-mode .preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 34px;
+  padding: 0 12px;
+  z-index: 50;
+  background: #F9F9F7;
+  border-bottom: 2px solid #111111;
+  font-family: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+  font-size: 11.5px;
+  color: #111111;
+  /* 窗口拉得再窄也不丢按钮：横向可滚，滚动条本身不显示 */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+body.preview-mode .preview-bar::-webkit-scrollbar { display: none; }
+
+/* 预览窗口本身可以随意缩放，光标/选择行为按桌面软件来 */
+body.preview-mode { -webkit-app-region: no-drag; }
+body.preview-mode .pv-tag,
+body.preview-mode .pv-lab,
+body.preview-mode .pv-note,
+body.preview-mode .pv-btn { user-select: none; }
+
+body.preview-mode .pv-tag {
+  flex: 0 0 auto;
+  font-family: 'Playfair Display', 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: -0.01em;
+  color: #111111;
+  margin-right: 4px;
+}
+
+body.preview-mode .pv-btn {
+  flex: 0 0 auto;
+  border: 1px solid #111111;
+  background: transparent;
+  color: #111111;
+  border-radius: 0;
+  padding: 3px 9px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: background .15s ease-out, color .15s ease-out;
+}
+body.preview-mode .pv-btn:hover { background: #111111; color: #F9F9F7; }
+body.preview-mode .pv-btn.on { background: #CC0000; border-color: #CC0000; color: #ffffff; }
+
+body.preview-mode .pv-sep {
+  flex: 0 0 auto;
+  width: 1px; height: 16px;
+  margin: 0 4px;
+  background: #111111;
+  opacity: .25;
+}
+
+body.preview-mode .pv-lab {
+  flex: 0 0 auto;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #737373;
+}
+body.preview-mode .pv-note {
+  margin-left: auto;
+  padding-left: 10px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  color: #737373;
+}

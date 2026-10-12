@@ -1,0 +1,385 @@
+{
+  "port": 58880,
+  "host": "127.0.0.1",
+  "token": "",
+  "displayIndex": 0,
+  "designWidth": 1280,
+  "designHeight": 960,
+  "fit": "fill",
+  "scale": 0.64,
+  "safezone": {
+    "x": 0.95,
+    "y": 0.95
+  },
+  "enableInteraction": false,
+  "layout": {
+    "offsetX": 0,
+    "offsetY": 0
+  },
+  "font": {
+    "family": "Segoe UI"
+  },
+  "text": {
+    "weaponNames": {},
+    "grenadeChars": {
+      "flame": "火",
+      "smoke": "烟",
+      "he": "雷",
+      "flash": "闪",
+      "decoy": "诱"
+    },
+    "grenadeSep": "・",
+    "labels": {
+      "alive": "存活",
+      "ct": "CT",
+      "t": "T"
+    }
+  },
+  "custom": [],
+  "icons": [],
+  "shapes": [],
+  "modules": {
+    "scoreboard": {
+      "offsetX": 0,
+      "offsetY": -45,
+      "scaleX": 0.64,
+      "scaleY": 0.64,
+      "rotate": 0,
+      "opacity": 0,
+      "glow": 0,
+      "glowColor": "#FFFFFF",
+      "ctColor": "#000000",
+      "tColor": "#000000",
+      "centerColor": "#333333"
+    },
+    "money": {
+      "offsetX": -40,
+      "offsetY": -520,
+      "scaleX": 1.02,
+      "scaleY": 1.02,
+      "rotate": 0,
+      "opacity": 1,
+      "glow": 0,
+      "glowColor": "#FFFFFF",
+      "barColor": "#0E131A",
+      "barAlpha": 0.21
+    },
+    "vitals": {
+      "offsetX": -40,
+      "offsetY": 45,
+      "scaleX": 1,
+      "scaleY": 0.75,
+      "rotate": 0,
+      "opacity": 1,
+      "glow": 0,
+      "glowColor": "#FFFFFF",
+      "barColor": "#0E131A",
+      "barAlpha": 0.22
+    },
+    "ammo": {
+      "offsetX": 0,
+      "offsetY": 43,
+      "scaleX": 1,
+      "scaleY": 0.75,
+      "rotate": 0,
+      "opacity": 1,
+      "glow": 0,
+      "glowColor": "#FFFFFF",
+      "barColor": "#0E131A",
+      "barAlpha": 0.22
+    },
+    "weaponList": {
+      "offsetX": 67,
+      "offsetY": -217,
+      "scaleX": 1.1,
+      "scaleY": 0.82,
+      "rotate": 0,
+      "opacity": 1,
+      "glow": 0,
+      "glowColor": "#FFFFFF",
+      "textColor": "#FFFFFF",
+      "dimColor": "rgba(255, 255, 255, 0.77)"
+    },
+    "roster": {
+      "offsetX": 0,
+      "offsetY": 0,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotate": 0,
+      "opacity": 1,
+      "glow": 0,
+      "glowColor": "#FFFFFF",
+      "barColor": "#0E131A",
+      "barAlpha": 0.5,
+      "textColor": "#FFFFFF",
+      "dimColor": "rgba(242, 245, 247, 0.55)",
+      "aliveColor": "#F2F5F7",
+      "deadColor": "#7A828B",
+      "selfColor": "#E8C46A",
+      "accentColor": "#4C8DFF"
+    }
+  },
+  "roster": {
+    "scope": "team",
+    "rowsPerTeam": 5,
+    "sortBy": "score",
+    "hideDead": false,
+    "showHealth": false,
+    "showArmor": false,
+    "showWeapon": false,
+    "showKda": false,
+    "showMoney": false,
+    "showSelf": false
+  },
+  "events": {
+    "enabled": false,
+    "anchor": "mc",
+    "offsetX": 0,
+    "offsetY": 340,
+    "fontSize": 96,
+    "holdMs": 1500,
+    "fadeMs": 240,
+    "kill": {
+      "on": false,
+      "text": "First Kill",
+      "color": "#800000"
+    },
+    "multi": {
+      "on": false,
+      "text": "{round_kills} Kills",
+      "color": "#FF0000"
+    },
+    "death": {
+      "on": false,
+      "text": "阵 亡",
+      "color": "#E8231C"
+    },
+    "assist": {
+      "on": false,
+      "text": "助攻  +1",
+      "color": "#8FA0B4"
+    },
+    "mvp": {
+      "on": false,
+      "text": "MVP",
+      "color": "#E8C46A"
+    }
+  },
+  "adv": {
+    "enabled": false,
+    "engine": {
+      "maxQueue": 3,
+      "dedupeMs": 250
+    },
+    "style": {
+      "iconOn": true,
+      "iconSide": "left",
+      "iconGap": 10,
+      "iconSize": 1,
+      "weight": 700,
+      "letterSpacing": 0.06,
+      "italic": false,
+      "outlineOn": false,
+      "outlineWidth": 2,
+      "outlineColor": "#000000",
+      "curveOn": false,
+      "curveRadius": 40,
+      "curveArc": -120
+    },
+    "timeline": {
+      "inScale": 0.85,
+      "inDur": 120,
+      "inEase": "backOut",
+      "pulseOn": false,
+      "pulseTo": 1.08,
+      "pulseDur": 450,
+      "pulseRepeat": 2,
+      "holdMs": 1500,
+      "outDur": 240
+    },
+    "effects": {
+      "shakeOn": false,
+      "shakeAmp": 4,
+      "shakeDur": 180,
+      "shakeAxis": "xy",
+      "rumbleOn": false,
+      "rumbleStrong": 0.5,
+      "rumbleWeak": 0.25,
+      "rumbleDur": 160
+    },
+    "kinds": {
+      "kill": {
+        "on": true,
+        "icon": "🎯"
+      },
+      "multi": {
+        "on": true,
+        "icon": "🔥",
+        "pulseOn": true
+      },
+      "death": {
+        "on": true,
+        "icon": "💀",
+        "shakeOn": true
+      },
+      "assist": {
+        "on": false,
+        "icon": "🤝"
+      },
+      "mvp": {
+        "on": false,
+        "icon": "⭐",
+        "pulseOn": true
+      }
+    },
+    "elements": {
+      "mod": {
+        "money": {
+          "italic": false
+        }
+      },
+      "ev": {
+        "kill": {
+          "enabled": false,
+          "icon": "First",
+          "iconSize": 2.5
+        },
+        "multi": {
+          "enabled": false,
+          "icon": "🎯"
+        }
+      }
+    }
+  },
+  "buywheel": {
+    "enabled": false,
+    "openOnBuyTime": false,
+    "closeOnEsc": false,
+    "showMoney": false,
+    "centerLabel": "BUY",
+    "execMode": "auto",
+    "consoleKey": "`",
+    "unbindOnClose": false,
+    "cfgDir": "C:\\IIDATAII\\GamesClients\\steam\\steamapps\\common\\Counter-Strike Global Offensive\\game\\csgo\\cfg",
+    "keys": [
+      "0",
+      "9",
+      "8",
+      "7",
+      "6"
+    ],
+    "teams": {
+      "CT": {
+        "gear": [
+          "vest",
+          "vesthelm",
+          "defuser",
+          "taser"
+        ],
+        "pistol": [
+          "hkp2000",
+          "usp_silencer",
+          "p250",
+          "fiveseven",
+          "deagle"
+        ],
+        "smg": [
+          "mp9",
+          "mp7",
+          "mp5sd",
+          "ump45",
+          "p90"
+        ],
+        "rifle": [
+          "m4a1",
+          "m4a1_silencer",
+          "aug",
+          "ssg08",
+          "awp"
+        ],
+        "nade": [
+          "flashbang",
+          "smokegrenade",
+          "hegrenade",
+          "incgrenade",
+          "decoy"
+        ]
+      },
+      "T": {
+        "gear": [
+          "vest",
+          "vesthelm",
+          "taser"
+        ],
+        "pistol": [
+          "glock",
+          "p250",
+          "tec9",
+          "elite",
+          "deagle"
+        ],
+        "smg": [
+          "mac10",
+          "mp7",
+          "mp5sd",
+          "ump45",
+          "p90"
+        ],
+        "rifle": [
+          "ak47",
+          "sg556",
+          "ssg08",
+          "awp",
+          "g3sg1"
+        ],
+        "nade": [
+          "flashbang",
+          "smokegrenade",
+          "hegrenade",
+          "molotov",
+          "decoy"
+        ]
+      }
+    }
+  },
+  "gamecmds": {
+    "autoexec": false,
+    "enabled": {
+      "hide_native_hud": true,
+      "radar": true,
+      "teamid_overhead": true,
+      "alt_hud": true,
+      "tracers": true
+    }
+  },
+  "hud": {
+    "barAlpha": 0.5,
+    "healthRedThreshold": 50,
+    "lowHealthThreshold": 25,
+    "moneyGainColor": "#A6D94A",
+    "moneySpendColor": "#E8231C",
+    "moneyDeltaHoldMs": 1800,
+    "aliveCountMode": "label",
+    "factionMark": true
+  },
+  "show": {
+    "scoreBar": true,
+    "timer": true,
+    "health": true,
+    "armor": true,
+    "money": true,
+    "ammo": true,
+    "roundKills": true,
+    "weaponList": true,
+    "weaponTextOutline": true,
+    "defuseKit": true,
+    "roster": false
+  },
+  "timer": {
+    "roundSeconds": 115,
+    "freezeSeconds": 15,
+    "bombSeconds": 40,
+    "hideWhenNoMatch": true
+  },
+  "staleTimeoutMs": 40000
+}
