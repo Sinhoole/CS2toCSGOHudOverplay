@@ -25,6 +25,7 @@
     "verify": "node tools/verify-gsi.mjs",
     "selftest": "node tools/selftest.mjs",
     "test:config": "node tools/config-test.mjs",
+    "test:arch": "node tools/check-arch.mjs",
     "install-cfg": "node tools/install-cfg.mjs",
     "icon": "node tools/make-icon.mjs",
     "dist": "node tools/make-icon.mjs && node tools/dist.mjs --win --x64",

@@ -19,6 +19,31 @@ hub.onSnapshot((s) => (last = s));
 const feed = (t) => hub._ingest(JSON.stringify(buildPayload(t)), '');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ============================================================
+// 整树读取：自检不该跟文件布局绑死。
+// 重构后设置界面是 30+ 个小文件，按路径读单文件会随时失效；
+// 这里按目录收集，断言只关心「这套代码里有没有这段逻辑」。
+// ============================================================
+import fsTop from 'node:fs';
+import pathTop from 'node:path';
+
+const ROOT = pathTop.join(import.meta.dirname, '..');
+
+function readTree(...dirs) {
+  const out = [];
+  const walk = (d) => {
+    const abs = pathTop.join(ROOT, d);
+    if (!fsTop.existsSync(abs)) return;
+    for (const e of fsTop.readdirSync(abs, { withFileTypes: true })) {
+      const p = pathTop.join(abs, e.name);
+      if (e.isDirectory()) walk(pathTop.relative(ROOT, p));
+      else if (/\.(js|css|html)$/.test(e.name)) out.push(fsTop.readFileSync(p, 'utf8'));
+    }
+  };
+  for (const d of dirs) walk(d);
+  return out.join('\n/* ---- 文件分界 ---- */\n');
+}
+
 let pass = 0;
 let fail = 0;
 const check = (name, cond, extra = '') => {
@@ -701,7 +726,7 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   const root = path.join(import.meta.dirname, '..');
   const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
-  const setJs = read('src/settings/settings.js');
+  const setJs = readTree('src/settings', 'src/ui', 'src/core');
   const setCss = read('src/settings/settings.css');
   const setPre = read('src/settings/preload.js');
   const main = read('src/main.js');
@@ -983,7 +1008,7 @@ console.log('\n[14] 原生 HUD / 游戏命令（写进 CS2 的配套 cfg）');
   const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
   const G = require('../src/gamecmds.js');
-  const setJs = read('src/settings/settings.js');
+  const setJs = readTree('src/settings', 'src/ui', 'src/core');
   const setPre = read('src/settings/preload.js');
   const main = read('src/main.js');
   const cfgJs = read('src/config.js');
@@ -1085,7 +1110,7 @@ console.log('\n[14] 原生 HUD / 游戏命令（写进 CS2 的配套 cfg）');
   const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
   const mainJs = read('src/main.js');
-  const setJs = read('src/settings/settings.js');
+  const setJs = readTree('src/settings', 'src/ui', 'src/core');
   const setPre = read('src/settings/preload.js');
   const setHtml = read('src/settings/index.html');
   const setCss = read('src/settings/settings.css');
@@ -1200,6 +1225,213 @@ console.log('\n[20] 版本比较（src/version.js）');
   } catch (e) {
     console.log('  · 跳过真实公告页样本（.shots/changelog.html 不存在）');
   }
+}
+
+// ============================================================
+// 架构（重构后）：清单 / 加载顺序 / 模块粒度 / 框架层
+// ============================================================
+{
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const cp = require('node:child_process');
+  const root = path.join(import.meta.dirname, '..');
+  const SETTINGS = path.join(root, 'src/settings');
+  const abs = (p) => path.resolve(SETTINGS, p);
+
+  console.log('\n[架构] 清单与加载顺序');
+
+  // manifest 在 Node 里也能跑（它只往 globalThis 挂数据）
+  new Function(fs.readFileSync(path.join(SETTINGS, 'manifest.js'), 'utf8'))();
+  const M = globalThis.OphManifest;
+  check('manifest 产出 OphManifest', !!M);
+
+  const miss = M.flat.filter((p) => !fs.existsSync(abs(p)));
+  check('清单里的文件都在磁盘上', miss.length === 0, miss.join(', '));
+  check('宿主 app.js 排在页面之后（页面加载期要解构 OphApp）',
+    M.flat.indexOf('app.js') > M.flat.indexOf('sections/declarative.js'));
+  check('app-api 排在控件之前（控件加载期要解构 OphApp）',
+    M.flat.indexOf('app-api.js') < M.flat.indexOf('../ui/controls/base.js'));
+
+  const r = cp.spawnSync(process.execPath, [path.join(root, 'tools/check-arch.mjs')], { encoding: 'utf8' });
+  check('架构自检：所有加载期依赖都排在使用者之前', r.status === 0,
+    (r.stdout || '').split('\n').filter((l) => l.includes('❌') || l.includes('→')).slice(0, 4).join(' '));
+
+  // 模块粒度 —— 本次重构的核心目标：任何单文件都不该再是巨石
+  // 范围：本次重构过的三层（core / ui / settings）。settings.js 是刻意保留的旧巨石，排除。
+  const OLD_MONOLITH = path.join(SETTINGS, 'settings.js');
+  const sizes = [];
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.js') && p !== OLD_MONOLITH) {
+        sizes.push([path.relative(root, p), fs.readFileSync(p, 'utf8').split('\n').length]);
+      }
+    }
+  };
+  for (const d of ['src/core', 'src/ui', 'src/settings']) walk(path.join(root, d));
+  const huge = sizes.filter(([, n]) => n > 420);
+  check('重构范围内（core/ui/settings）没有超过 420 行的 js', huge.length === 0,
+    huge.map(([p, n]) => `${p}=${n}`).join(' '));
+  check(`重构后拆出 ${sizes.length} 个文件、最大 ${Math.max(...sizes.map((x) => x[1]))} 行`,
+    sizes.length >= 30, `实际 ${sizes.length} 个`);
+  check('重构前那份巨石文件仍在（未删，可随时回退）',
+    fs.existsSync(OLD_MONOLITH) && !M.flat.some((p) => abs(p) === OLD_MONOLITH));
+
+  // 真实加载：按清单顺序在 Node 里跑一遍全部文件，验证自注册结果
+  console.log('\n[架构] 真实加载 + 自注册');
+  const loaded = [];
+  let loadErr = null;
+  try {
+    for (const p of M.flat) { new Function(fs.readFileSync(abs(p), 'utf8'))(); loaded.push(p); }
+  } catch (e) { loadErr = e; }
+  check('全部文件按清单顺序可加载', loaded.length === M.flat.length && !loadErr,
+    loadErr ? `第 ${loaded.length + 1} 个失败：${loadErr.message}` : `${loaded.length}/${M.flat.length}`);
+
+  const S = globalThis.OphSections;
+  check('页面注册表已建（OphSections）', !!S && S.size() > 0);
+  // 期望值直接从源码数出来（一个文件可以注册多页，append 顺序无关）—— 布局再变也不用改断言
+  const wantRegs = M.sections
+    .filter((p) => p !== 'sections/index.js')
+    .reduce((n, p) => n + (fs.readFileSync(abs(p), 'utf8').match(/OphSections\.register\(/g) || []).length, 0);
+  check('自注册次数 = 源码里 register() 的调用数', S.size() === wantRegs,
+    `注册 ${S.size()} / 源码 ${wantRegs}`);
+  const ids = S.ids();
+  check('侧栏顺序与重构前一致（首页最前、配置方案最后）',
+    ids[0] === 'home' && ids[ids.length - 1] === 'profiles', ids.join(','));
+  for (const need of ['money', 'vitals', 'ammo', 'weaponListText', 'weaponListSvg', 'text', 'custom', 'global', 'gamecmds', 'update'])
+    check(`页面在册：${need}`, S.has(need));
+  check('分组齐全（home / basic / tools）',
+    ['home', 'basic', 'tools'].every((g) => S.groups().some(([id]) => id === g)));
+  check('页面自注册带 ico（侧栏图标不丢）', S.list().every((s) => !!s.ico));
+
+  // ---- 框架层：检索 / 令牌 / 主题 / 内核 / 总线 / 存储 / 控件类型 ----
+  console.log('\n[架构] 框架层');
+  const entries = S.searchEntries();
+  check('检索条目 = 页面 + 字段（多于页面数）', entries.length > S.size(), `${entries.length} 条`);
+  const Search = globalThis.OphSearch.create();
+  Search.index(entries);
+  const hit = Search.query('低血');
+  check('检索「低血」命中 血量/护甲 页', hit.length > 0 && hit[0].entry.target.section === 'vitals',
+    JSON.stringify(hit.slice(0, 1).map((x) => x.entry.id)));
+  check('检索「money」命中金钱页', (Search.query('money')[0] || {}).entry?.target?.section === 'money');
+  check('检索空串返回空（显示什么由调用方决定）', Search.query('').length === 0);
+  check('检索打分：全等不劣于包含', Search.query('金钱')[0].score >= Search.query('金')[0].score);
+
+  // 主题切换要碰 DOM，这里给个最小替身 —— 验的是逻辑，不是浏览器
+  const stubNode = () => ({
+    setAttribute() {}, removeAttribute() {}, getAttribute() { return null; },
+    style: { setProperty() {}, removeProperty() {}, length: 0 }, dataset: {},
+  });
+  globalThis.document = {
+    getElementById: () => null,
+    createElement: stubNode,
+    head: { append() {} },
+    documentElement: stubNode(),
+  };
+  const Themes = globalThis.OphThemes.create({ bus: null });
+  Themes.register({ id: 'newsprint', name: '报刊风', href: null });
+  check('主题注册表：可注册可列举', Themes.list().length === 1 && Themes.has('newsprint'));
+  check('主题切换返回生效 id（href 为空 = 用内置样式表那份）',
+    Themes.use('newsprint', { remember: false }) === 'newsprint');
+  Themes.register({ id: 'ink', name: '墨黑', href: '../themes/ink.css' });
+  check('主题：可加第二套主题并切过去', Themes.use('ink', { remember: false }) === 'ink'
+    && Themes.current() === 'ink' && globalThis.OphThemes.LINK_ID === 'oph-theme');
+  check('主题：未知 id 回落而非崩', ['newsprint', 'ink'].includes(Themes.use('不存在', { remember: false })));
+  delete globalThis.document;
+
+  const tok = globalThis.OphTokens.fromCss(':root { --paper: #F9F9F7; --ink: #111111; }');
+  check('令牌解析：fromCss 抠出 CSS 变量', tok['--paper'] === '#F9F9F7' && tok['--ink'] === '#111111');
+
+  const Kernel = globalThis.OphKernel.create({ bus: globalThis.OphBus.create('t') });
+  const seq = [];
+  Kernel.define({ id: 'b', deps: ['a'], init: () => seq.push('b') });
+  Kernel.define({ id: 'a', init: () => seq.push('a') });
+  Kernel.start({});
+  check('内核按依赖排序（b 依赖 a → a 先跑）', seq.join('') === 'ab', seq.join(''));
+  let cyc = '';
+  try {
+    const k2 = globalThis.OphKernel.create({});
+    k2.define({ id: 'x', deps: ['y'] });
+    k2.define({ id: 'y', deps: ['x'] });
+    k2.start({});
+  } catch (e) { cyc = e.message; }
+  check('内核拒绝依赖成环', /成环/.test(cyc), cyc);
+
+  const bus2 = globalThis.OphBus.create('t2');
+  let got = 0;
+  bus2.on('e', () => { throw new Error('故意炸'); });
+  bus2.on('e', () => { got += 1; });
+  bus2.emit('e');
+  check('总线：单个订阅者抛错不影响其它订阅者', got === 1);
+
+  const obj = { a: { b: 1 } };
+  const Store = globalThis.OphStore.create({ source: () => obj });
+  let fired = 0;
+  const off = Store.subscribe(['a.b'], () => { fired += 1; });
+  Store.set('a.b', 2);
+  Store.set('a.c', 3);
+  check('存储：按路径订阅只在该路径改动时通知', fired === 1, `实际 ${fired}`);
+  check('存储：读取带默认值', Store.get('a.zz', 'D') === 'D');
+  off();
+  Store.set('a.b', 9);
+  check('存储：退订后不再通知', fired === 1);
+
+  // 编辑写回链路：commit → 存储 → 标脏 + 推预览。
+  // 截图验证不了这条路径（读值不经过它），但它才是用户拖滑杆时真正跑的东西。
+  console.log('\n[架构] 编辑写回链路');
+  const Ctx = globalThis.OphCtx;
+  const saveDirty = globalThis.OphApp.markDirty;
+  const savePrev = globalThis.OphApp.schedulePreview;
+  let dirtyN = 0;
+  let prevN = 0;
+  globalThis.OphApp.markDirty = () => { dirtyN += 1; };
+  globalThis.OphApp.schedulePreview = () => { prevN += 1; };
+  Ctx.state.cfg = { show: { money: false, health: true } };
+  Ctx.commit('show.money', true);
+  check('commit 写进配置对象', Ctx.state.cfg.show.money === true);
+  check('commit 触发标脏（未保存提示）', dirtyN === 1, `实际 ${dirtyN}`);
+  check('commit 触发预览推送', prevN === 1, `实际 ${prevN}`);
+  check('commit 后 state.dirty = true', Ctx.state.dirty === true);
+  check('Ctx.get 读得到刚写的值 / 缺省值生效',
+    Ctx.get('show.money') === true && Ctx.get('show.nope', 'D') === 'D');
+  check('Ctx.defaultOf 走的是出厂默认那份', Ctx.defaultOf('nope.deep', 'X') === 'X');
+  globalThis.OphApp.markDirty = saveDirty;
+  globalThis.OphApp.schedulePreview = savePrev;
+
+  const Fx = globalThis.OphEffects.create({ bus: null });
+  let hap = null;
+  Fx.register('haptic', (p) => { hap = p; });
+  Fx.haptic(0.8, 120, 'kill');
+  check('触感缝：play/register 可用（震动后期只需补实现）',
+    !!hap && hap.kind === 'kill' && hap.strength === 0.8 && hap.ms === 120);
+  let hap2 = null;
+  Fx.register('haptic', (p) => { hap2 = p; });
+  Fx.haptic(9, 10, 'ui');
+  check('触感：强度夹在 0~1', hap2.strength === 1 && hap2.ms === 10);
+
+  const Schema = globalThis.OphSchema;
+  check('字段规整：缺 path 直接报错（坏 schema 早暴露）',
+    (() => { try { Schema.normalizeField({ label: 'x' }, 0); return false; } catch (e) { return true; } })());
+  check('字段规整：补 type 默认值', Schema.normalizeField({ path: 'a.b' }, 0).type === 'num');
+  check('clampNum 行为未变（区间 / 取整 / 步长）',
+    Schema.clampNum(150, { min: 0, max: 100 }) === 100
+    && Schema.clampNum(2.7, { integer: true }) === 3
+    && Schema.clampNum(0.12345, { step: 0.01 }) === 0.123);
+  check('控件类型注册表：未知类型回落 num', Schema.typeFor('不存在的类型') === Schema.typeFor('num'));
+
+  // 上架页面不许依赖未加载的离线页面代码（check-arch 之外的第二道闸）
+  const offlineNs = [];
+  for (const p of M.dormant) {
+    const src = fs.readFileSync(abs(p), 'utf8');
+    for (const m of src.matchAll(/globalThis\.(Oph\w+)\s*=\s*Object\.assign/g)) offlineNs.push([p, m[1]]);
+  }
+  const leak = [];
+  for (const p of [...M.core, ...M.ui, ...M.app, ...M.sections]) {
+    const src = fs.readFileSync(abs(p), 'utf8');
+    for (const [of, ns] of offlineNs) if (new RegExp(`globalThis\\.${ns}\\b`).test(src) && ns !== 'OphAdvBridge') leak.push(`${p} → ${ns}`);
+  }
+  check('上架代码不引用已下线模块的命名空间', leak.length === 0, leak.join(' '));
 }
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败\n`);
