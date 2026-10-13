@@ -336,7 +336,10 @@ class GsiHub {
         // 同一个 id 只记一次（燃烧弹 / 燃烧瓶共用 'flame'），
         // 但记下它是不是当前手持的那个 —— 前端只高亮这一颗。
         const dup = grenades.find((x) => x.id === nade.id);
-        if (!dup) grenades.push({ id: nade.id, char: nade.char, order: nade.order, active: isActive });
+        if (!dup) grenades.push({
+          id: nade.id, char: nade.char, order: nade.order, active: isActive,
+          name: w.name, label: displayName(w.name),   // 名称显示用（可被 text.weaponNames 覆盖）
+        });
         else if (isActive) dup.active = true;
         continue;
       }
@@ -355,6 +358,8 @@ class GsiHub {
     grenades.sort((a, b) => a.order - b.order);
     out[3].chars = grenades.map((x) => x.char);
     out[3].ids = grenades.map((x) => x.id);
+    out[3].names = grenades.map((x) => x.name || '');
+    out[3].labels = grenades.map((x) => x.label || '');
     out[3].activeIndex = grenades.findIndex((x) => x.active);
     out[3].active = out[3].activeIndex >= 0;
 

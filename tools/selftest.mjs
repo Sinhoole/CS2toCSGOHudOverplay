@@ -862,7 +862,56 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   check('1/2/3 号槽位图标左右镜像',
     /\.slot\[data-slot="1"\][\s\S]{0,160}--wl-svg-mirror: -1/.test(hudCss));
   check('镜像与选中放大共用 transform 变量（不会互相覆盖）',
-    hudCss.includes('scaleX(var(--wl-svg-mirror, 1)) scale(1.18)'));
+    hudCss.includes('scaleX(var(--wl-svg-mirror, 1)) scale(var(--wl-svg-active-scale, 1.18))'));
+
+  // ---- 行距 / 选中放大 / 名称显示 ----
+  check('DEFAULTS 含行距 gap / 放大 activeScale / 名称开关',
+    DEF.modules.weaponList.svg.gap === 12
+    && DEF.modules.weaponList.svg.activeScale === 1.18
+    && DEF.modules.weaponList.svg.showName === true);
+  check('DEFAULTS 含名称颜色与每栏常显名称 slotNames(1..5)',
+    DEF.modules.weaponList.svg.nameColor === '#FFFFFF'
+    && !!DEF.modules.weaponList.svg.slotNames
+    && DEF.modules.weaponList.svg.slotNames['5'] === '');
+  check('行间距走 CSS 变量（可在设置里调）',
+    /\.weapon-bar-svg \{[^}]*gap: calc\(var\(--wl-svg-gap, 12px\) \* var\(--scale\)\)/.test(hudCss));
+  check('选中放大倍数走 CSS 变量',
+    /--wl-svg-active-scale/.test(hudCss));
+  check('名称元素 .wl-name 有独立样式（可显隐/两态配色）',
+    /\.weapon-bar-svg \.wl-name \{[^}]*white-space: nowrap/.test(hudCss)
+    && /\.weapon-bar-svg \.wl-name\.on\.pin/.test(hudCss)
+    && /\.weapon-bar-svg \.wl-name\.on\.act/.test(hudCss));
+  check('名称在 .ico 之外（不被 1/2/3 的镜像 transform 翻转）',
+    /<span class="wl-name"><\/span><div class="ico">/.test(read('src/renderer/index.html')));
+  check('HUD 渲染层读 showName / slotNames / names / labels',
+    hudJs.includes('svg.showName !== false') && hudJs.includes('svg.slotNames')
+    && hudJs.includes('info.names') && hudJs.includes('info.labels'));
+  check('有常显名称的空槽位不会被隐藏',
+    hudJs.includes('empty && !pinName'));
+  check('applyModules 写出行距/放大/名称颜色变量',
+    hudJs.includes("'--wl-svg-gap'") && hudJs.includes("'--wl-svg-active-scale'")
+    && hudJs.includes("'--wl-svg-name-color'"));
+  check('设置页有「名称与行距」卡（行距/放大/名称/常显名）',
+    setJs.includes('名称与行距') && setJs.includes("path: base + '.gap'")
+    && setJs.includes("path: base + '.activeScale'") && setJs.includes("path: base + '.showName'")
+    && setJs.includes('.slotNames.'));
+  check('设置页可跳去「文字替换」改武器名',
+    setJs.includes("activate('text')"));
+
+  // 投掷物名称：gsi 要把每颗的内部名与显示名带上，前端才能只显示手上那颗的名字
+  check('gsi 投掷物条目带 name / label',
+    gsiJs.includes('name: w.name, label: displayName(w.name)')
+    && gsiJs.includes('out[3].names =') && gsiJs.includes('out[3].labels ='));
+  {
+    const WN = require('../src/weapon-names.js');
+    check('投掷物显示名逐颗正确（燃烧弹 ≠ 燃烧瓶）',
+      WN.displayName('weapon_incgrenade') === '燃烧弹'
+      && WN.displayName('weapon_molotov') === '燃烧瓶'
+      && WN.displayName('weapon_flashbang') === '闪光弹'
+      && WN.displayName('weapon_decoy') === '诱饵弹'
+      && WN.displayName('weapon_smokegrenade') === '烟雾弹'
+      && WN.displayName('weapon_hegrenade') === '高爆手雷');
+  }
   check('HUD 渲染层消费每槽位辉光颜色',
     hudJs.includes('svg.glowColors') && hudJs.includes("setProperty('--wl-svg-glow-color'"));
   check('设置页有每槽位辉光颜色取色器',

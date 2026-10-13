@@ -3331,6 +3331,44 @@ function buildWeaponListSvgCard() {
   styleCard.append(styleBody);
   wrap.append(styleCard);
 
+  // ---- 名称与行距 ----
+  const nameCard = el('div', 'card');
+  const nameHead = el('div', 'card-head');
+  {
+    const box = el('div');
+    box.append(el('div', 'card-title', '名称与行距'));
+    box.append(el('div', 'card-hint', '每行左侧可以显示字：选中的那一栏显示武器名（跟着一起亮），其余栏可以填「常显名称」当固定标签用。'));
+    nameHead.append(box);
+  }
+  nameCard.append(nameHead);
+  const nameBody = el('div', 'card-body');
+
+  nameBody.append(fieldRow('行间距', numControl({ type: 'num', label: '行间距', path: base + '.gap', min: 0, max: 60, step: 1, unit: 'px' })));
+  nameBody.append(fieldRow('选中放大倍数', numControl({ type: 'num', label: '选中放大倍数', path: base + '.activeScale', min: 1, max: 1.6, step: 0.01 })));
+  {
+    const f = { type: 'switch', label: '选中时显示武器名称', path: base + '.showName' };
+    const field = el('div', 'field');
+    const row = el('div', 'row');
+    row.append(switchControl(f), el('span', 'switch-label', f.label));
+    field.append(row);
+    field.append(el('div', 'note', '只显示当前手持的那一件：投掷物行只显示手上那颗的名字，其余不显示。'));
+    nameBody.append(field);
+  }
+  nameBody.append(fieldRow('名称颜色', colorControl({ type: 'color', label: '名称颜色', path: base + '.nameColor', fallback: '#FFFFFF' })));
+  for (let i = 1; i <= 5; i++) {
+    nameBody.append(fieldRow(`${i} 号栏常显名称`, textControl({
+      type: 'text', label: `${i} 号栏常显名称`, path: `${base}.slotNames.${i}`, placeholder: '留空 = 不常显',
+    }), i === 1 ? '填了就一直在（该栏空着也保留这一行）；选中该栏时让位给实际武器名。' : ''));
+  }
+  {
+    const jump = el('button', 'mini', '去自定义武器名称');
+    jump.addEventListener('click', () => activate('text'));
+    nameBody.append(fieldRow('武器名称', jump,
+      '选中时显示的是武器名。想改某个武器的名字（含闪光弹 / 诱饵弹等投掷物），在「文字替换 → 武器名称」里按内部名改，文字态与 SVG 态共用同一份。'));
+  }
+  nameCard.append(nameBody);
+  wrap.append(nameCard);
+
   // ---- 槽位图标覆盖 ----
   const slotCard = el('div', 'card');
   const slotHead = el('div', 'card-head'); slotHead.append(el('div', 'card-title', '槽位图标覆盖（留空 = 自动）')); slotCard.append(slotHead);

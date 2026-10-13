@@ -886,7 +886,20 @@ function renderWeaponBarSvg(s) {
 
   const icons = svg.icons || {};
   const knives = svg.knives || {};
+  const slotNames = svg.slotNames || {};
+  const showName = svg.showName !== false;
   const list = s.slots || [];
+
+  // 行内名称：选中时显示武器名（.act，吃辉光），否则显示该栏的常显名称（.pin，低调）
+  const setName = (el, text, kind) => {
+    const nEl = el.querySelector('.wl-name');
+    if (!nEl) return;
+    const t = text || '';
+    if (nEl.textContent !== t) nEl.textContent = t;
+    nEl.classList.toggle('on', !!t);
+    nEl.classList.toggle('act', !!t && kind === 'act');
+    nEl.classList.toggle('pin', !!t && kind === 'pin');
+  };
 
   svgSlotEls.forEach((el, i) => {
     // 每槽位独立辉光颜色：设了就用它，留空则回落全局 --wl-svg-glow-color
@@ -900,16 +913,29 @@ function renderWeaponBarSvg(s) {
     const info = list[i];
     const isGrenade = info && info.slot === 4;
     const empty = !info || (isGrenade ? (info.chars || []).length === 0 : !info.name);
+    const pinName = slotNames[i + 1] || '';
 
-    el.classList.toggle('empty', empty);
+    // 有常显名称的槽位即使空着也留着（那一行就是个固定标签）
+    el.classList.toggle('empty', empty && !pinName);
     el.classList.toggle('active', !!info && !!info.active && !isGrenade);
 
     if (isGrenade) {
       el.classList.toggle('active', !!info && !!info.active);
+      const ids = (info && info.ids) || [];
+      const activeIndex = (info && typeof info.activeIndex === 'number') ? info.activeIndex : -1;
+
+      // 只给当前手持的那一颗显示名字（闪光弹 / 诱饵弹…），其余不显示
+      let gName = '';
+      if (showName && activeIndex >= 0) {
+        gName = weaponLabel({
+          name: (info.names || [])[activeIndex] || '',
+          label: (info.labels || [])[activeIndex] || '',
+        });
+      }
+      setName(el, gName || pinName, gName ? 'act' : 'pin');
+
       const g = el.querySelector('.grenades');
       if (!g) return;
-      const ids = info.ids || [];
-      const activeIndex = (typeof info.activeIndex === 'number') ? info.activeIndex : -1;
       const sig = ids.join(',') + '|' + activeIndex + '|' + (icons[4] || '');
       if (g.dataset.sig === sig) return;   // 没变就不重建，避免每帧 innerHTML 闪烁
       g.dataset.sig = sig;
@@ -928,6 +954,9 @@ function renderWeaponBarSvg(s) {
     const ico = el.querySelector('.ico');
     if (!ico) return;
     const name = info ? info.name : '';
+    const activeName = (showName && info && info.active && name) ? weaponLabel(info) : '';
+    setName(el, activeName || pinName, activeName ? 'act' : 'pin');
+
     let file = '';
     if (icons[i]) file = icons[i];
     else if (isKnifeName(name)) file = knives[name] || weaponIconFile(name);
@@ -1298,6 +1327,9 @@ function applyModules(cfg) {
   root.setProperty('--wl-svg-active', wls.activeColor || '#FFFFFF');
   root.setProperty('--wl-svg-glow', `${wlsN(wls.glow, 0)}px`);
   root.setProperty('--wl-svg-glow-color', wls.glowColor || '#3b82f6');
+  root.setProperty('--wl-svg-gap', `${wlsN(wls.gap, 12)}px`);
+  root.setProperty('--wl-svg-active-scale', String(wlsN(wls.activeScale, 1.18)));
+  root.setProperty('--wl-svg-name-color', wls.nameColor || '#FFFFFF');
 
   // 名单面板：底栏浓度走 barAlpha，其余是各类文字的颜色
   const rp = M.roster || {};

@@ -67,12 +67,12 @@ const NAMES = {
  * 燃烧瓶和燃烧弹共用同一个 id，不用改两次。
  */
 const GRENADES = {
-  weapon_molotov: { id: 'flame', char: '火', order: 1 },
-  weapon_incgrenade: { id: 'flame', char: '火', order: 1 },
-  weapon_smokegrenade: { id: 'smoke', char: '烟', order: 2 },
-  weapon_hegrenade: { id: 'he', char: '雷', order: 3 },
-  weapon_flashbang: { id: 'flash', char: '闪', order: 4 },
-  weapon_decoy: { id: 'decoy', char: '诱', order: 5 },
+  weapon_molotov: { id: 'flame', char: '火', order: 1, name: '燃烧瓶' },
+  weapon_incgrenade: { id: 'flame', char: '火', order: 1, name: '燃烧弹' },
+  weapon_smokegrenade: { id: 'smoke', char: '烟', order: 2, name: '烟雾弹' },
+  weapon_hegrenade: { id: 'he', char: '雷', order: 3, name: '高爆手雷' },
+  weapon_flashbang: { id: 'flash', char: '闪', order: 4, name: '闪光弹' },
+  weapon_decoy: { id: 'decoy', char: '诱', order: 5, name: '诱饵弹' },
 };
 
 /** 投掷物的稳定顺序与默认单字，设置界面按这个列表生成可改的输入框 */
@@ -120,7 +120,7 @@ function displayName(name) {
   if (NAMES[name]) return NAMES[name];
   if (isKnife(name)) return '匕首';
   const g = GRENADES[name];
-  if (g) return GRENADE_NAMES[g.id] || g.char;
+  if (g) return g.name || GRENADE_NAMES[g.id] || g.char;
   return name.replace(/^weapon_/, '');
 }
 
