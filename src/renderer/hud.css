@@ -819,6 +819,9 @@ body { user-select: none; cursor: default; }
   transition: color 150ms linear, filter 150ms linear, transform 150ms ease;
 }
 .weapon-bar-svg .ico svg { width: 100%; height: 100%; display: block; }
+/* ⚠️ 必须覆盖上面的全局 `.ico path`（那条是给血量/护甲图标用的：浅填充 + 白描边）。
+   武器剪影要的是「实心」，不覆盖就会被画成空心描边线。 */
+.weapon-bar-svg .ico path { fill: currentColor; stroke: none; }
 .weapon-bar-svg .wnum {
   position: absolute;
   right: calc(-16px * var(--scale));
