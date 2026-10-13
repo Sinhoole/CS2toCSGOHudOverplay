@@ -862,7 +862,7 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   check('编号垂直居中在图标那一行（名称在下方也不掉）',
     /\.weapon-bar-svg \.wnum \{[^}]*top: 0[^}]*height: calc\(46px \* var\(--scale\)\)/.test(hudCss));
   check('右侧编号列对齐：编号统一右缘',
-    /\.weapon-bar-svg \.wnum \{[^}]*right: calc\(-26px/.test(hudCss));
+    /\.weapon-bar-svg \.wnum \{[^}]*right: calc\(-1 \* var\(--wl-svg-num-gap, 26px\)/.test(hudCss));
   check('1/2/3 号槽位图标左右镜像',
     /\.slot\[data-slot="1"\][\s\S]{0,160}--wl-svg-mirror: -1/.test(hudCss));
   check('镜像与选中放大共用 transform 变量（不会互相覆盖）',
@@ -879,6 +879,15 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     && DEF.modules.weaponList.svg.slotNames['5'] === '');
   check('行间距走 CSS 变量（可在设置里调）',
     /\.weapon-bar-svg \{[^}]*gap: calc\(var\(--wl-svg-gap, 12px\) \* var\(--scale\)\)/.test(hudCss));
+  check('DEFAULTS 含编号间距 numGap',
+    DEF.modules.weaponList.svg.numGap === 26);
+  check('图标↔编号距离走 CSS 变量（padding-right 与 .wnum right 同源）',
+    /\.weapon-bar-svg \{[^}]*padding-right: calc\(var\(--wl-svg-num-gap, 26px\) \* var\(--scale\)\)/.test(hudCss)
+    && /\.weapon-bar-svg \.wnum \{[^}]*right: calc\(-1 \* var\(--wl-svg-num-gap, 26px\) \* var\(--scale\)\)/.test(hudCss));
+  check('applyModules 写出编号间距变量',
+    hudJs.includes("'--wl-svg-num-gap'"));
+  check('设置页有「编号间距」调节项',
+    setJs.includes("path: base + '.numGap'"));
   check('选中放大倍数走 CSS 变量',
     /--wl-svg-active-scale/.test(hudCss));
   check('名称元素 .wl-name 有独立样式（可显隐/两态配色）',

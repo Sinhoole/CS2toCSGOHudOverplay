@@ -111,6 +111,7 @@ const DEFAULTS = {
         activeColor: '#FFFFFF',    // 选中时剪影转白
         glow: 6, glowColor: '#3b82f6',   // 选中辉光半径 / 颜色
         gap: 12,                   // 行间距（px，压在 --scale 之上）
+        numGap: 26,                // 图标右缘到右侧编号的水平距离（px）
         activeScale: 1.18,         // 选中时放大倍数（"放大一点点"就是这个）
         showName: true,            // 选中时在该行图标下方显示武器名称
         nameSize: 13,              // 名称字号（px），比编号小一号

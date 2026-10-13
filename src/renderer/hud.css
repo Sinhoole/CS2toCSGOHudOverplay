@@ -797,7 +797,7 @@ body { user-select: none; cursor: default; }
   display: flex;
   flex-direction: column;
   align-items: stretch;                      /* 各槽位等宽 → 右侧编号对齐成一列 */
-  padding-right: calc(26px * var(--scale));  /* 给右侧编号栏留位 */
+  padding-right: calc(var(--wl-svg-num-gap, 26px) * var(--scale));  /* 给右侧编号栏留位（距离可调） */
   gap: calc(var(--wl-svg-gap, 12px) * var(--scale));   /* 行间距，可在设置里调 */
   transform: translate(var(--m-weaponListSvg-x, 0px), var(--m-weaponListSvg-y, 0px))
              rotate(var(--m-weaponListSvg-rot, 0deg))
@@ -830,7 +830,7 @@ body { user-select: none; cursor: default; }
 .weapon-bar-svg .ico path { fill: currentColor; stroke: none; }
 .weapon-bar-svg .wnum {
   position: absolute;
-  right: calc(-26px * var(--scale));   /* 相对等宽槽位右缘 → 所有编号同一 x，列对齐 */
+  right: calc(-1 * var(--wl-svg-num-gap, 26px) * var(--scale));   /* 相对等宽槽位右缘 → 所有编号同一 x，列对齐 */
   top: 0;
   height: calc(46px * var(--scale));   /* 和 .ico 等高 → 编号垂直居中在「图标那一行」，
                                           名称出现在下方时编号也不会跟着往下掉 */

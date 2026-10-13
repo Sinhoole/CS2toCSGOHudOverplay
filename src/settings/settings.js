@@ -3344,6 +3344,8 @@ function buildWeaponListSvgCard() {
   const nameBody = el('div', 'card-body');
 
   nameBody.append(fieldRow('行间距', numControl({ type: 'num', label: '行间距', path: base + '.gap', min: 0, max: 60, step: 1, unit: 'px' })));
+  nameBody.append(fieldRow('编号间距', numControl({ type: 'num', label: '编号间距', path: base + '.numGap', min: 0, max: 80, step: 1, unit: 'px' }),
+    '图标右缘到右侧编号（1～5）之间的水平距离，调大编号就往右挪。'));
   nameBody.append(fieldRow('选中放大倍数', numControl({ type: 'num', label: '选中放大倍数', path: base + '.activeScale', min: 1, max: 1.6, step: 0.01 })));
   {
     const f = { type: 'switch', label: '选中时显示武器名称', path: base + '.showName' };
