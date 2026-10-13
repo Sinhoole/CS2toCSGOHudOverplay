@@ -932,21 +932,34 @@ function renderWeaponBarSvg(s) {
           label: (info.labels || [])[activeIndex] || '',
         });
       }
-      setName(el, gName || pinName, gName ? 'act' : 'pin');
+      // 手持那颗的名字贴在「它自己的图标下方」（.nade > .nname），
+      // 所以槽位级 .wl-name 只在「没有手持投掷物」时用来显示常显名称。
+      setName(el, gName ? '' : pinName, 'pin');
 
       const g = el.querySelector('.grenades');
       if (!g) return;
-      const sig = ids.join(',') + '|' + activeIndex + '|' + (icons[4] || '');
+      const sig = ids.join(',') + '|' + activeIndex + '|' + (icons[4] || '') + '|' + gName;
       if (g.dataset.sig === sig) return;   // 没变就不重建，避免每帧 innerHTML 闪烁
       g.dataset.sig = sig;
       g.innerHTML = '';
       ids.forEach((id, gi) => {
         const file = icons[4] ? icons[4] : grenadeIconFile(id);
         const svgStr = equipIconMap[file] || '';
+        // 每颗投掷物各自一个小盒子：图标在上、名字在下（只有手持那颗有名字）
+        const wrap = document.createElement('div');
+        wrap.className = 'nade';
         const d = document.createElement('div');
         d.className = 'ico' + (gi === activeIndex ? ' hot' : '');
         if (svgStr) d.innerHTML = svgStr;
-        g.appendChild(d);
+        wrap.appendChild(d);
+        const nm = document.createElement('span');
+        nm.className = 'nname';
+        if (gi === activeIndex && gName) {
+          nm.textContent = gName;
+          nm.classList.add('on', 'act');
+        }
+        wrap.appendChild(nm);
+        g.appendChild(wrap);
       });
       return;
     }

@@ -849,9 +849,10 @@ body { user-select: none; cursor: default; }
 }
 .weapon-bar-svg .grenades {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: calc(6px * var(--scale));
   min-height: calc(46px * var(--scale));   /* 与 .ico 等高 → 投掷物行竖中也和编号对齐 */
+  padding-top: calc(6px * var(--scale));   /* (46-34)/2 → 34px 图标在 46px 行里居中，对得上编号 */
 }
 .weapon-bar-svg .grenades .ico { width: calc(34px * var(--scale)); height: calc(34px * var(--scale)); }
 .weapon-bar-svg .grenades .ico.hot {
@@ -861,22 +862,39 @@ body { user-select: none; cursor: default; }
 }
 .weapon-bar-svg .slot.empty { display: none; }
 
-/* 4 号槽位（投掷物）是「一排图标」，名称放下面会贴在最后一颗底下、看着像在标它。
-   这一行改成横排：图标在左、名称在右，整体仍然贴右缘。 */
-.weapon-bar-svg .slot[data-slot="4"] {
-  flex-direction: row;
-  justify-content: flex-end;
+/* 4 号槽位（投掷物）是一「排」图标，名称要贴在「手上那一颗」的正下方 ——
+   挂在整排下面是错的（看着像在标最后一颗），甩到右边也是错的。
+   所以每颗投掷物各自包一层 .nade：图标在上、名字在下，只有手持那颗显示名字。 */
+.weapon-bar-svg .grenades .nade {
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  flex: 0 0 auto;
+  width: calc(34px * var(--scale));   /* 固定宽 → 名字溢出也不会挤动整排图标 */
 }
-.weapon-bar-svg .slot[data-slot="4"] .wl-name {
-  margin-top: 0;
-  margin-left: calc(7px * var(--scale));
+.weapon-bar-svg .grenades .nname {
+  margin-top: calc(2px * var(--scale));
+  font-size: calc(var(--wl-svg-name-size, 13px) * var(--scale));
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;                /* 居中溢出，不换行 */
+  color: var(--wl-svg-name-color, #FFFFFF);
+  text-shadow: 0 0 calc(3px * var(--scale)) #000;
+  opacity: 0;
+  transition: opacity 150ms linear, color 150ms linear, text-shadow 150ms linear;
+}
+.weapon-bar-svg .grenades .nname.on { opacity: 1; }
+/* 手持那颗的名字：吃该槽位自己的辉光色，和图标一起亮 */
+.weapon-bar-svg .grenades .nname.on.act {
+  text-shadow: 0 0 var(--wl-svg-glow, 0px) var(--wl-svg-glow-color, #3b82f6),
+               0 0 calc(3px * var(--scale)) #000;
 }
 
-/* ---- 行内名称（在图标「下方」，跟着图标右缘对齐） ----
+/* ---- 行内名称（单图标槽位：在图标「下方」，跟着图标右缘对齐） ----
    注意：它是 .slot 的直接子元素、不在 .ico 里 ——
    1) 不受 1/2/3 号槽位的镜像 transform 影响，文字不会反；
-   2) 参与布局（不是浮在 gap 上），所以行高真的会长出来，「行间距」负责把两行分开。 */
+   2) 参与布局（不是浮在 gap 上），所以行高真的会长出来，「行间距」负责把两行分开。
+   4 号投掷物行的「手持那颗」名字不走这里，走 .grenades .nname（贴各自图标下方）。 */
 .weapon-bar-svg .wl-name {
   margin-top: calc(3px * var(--scale));
   font-size: calc(var(--wl-svg-name-size, 13px) * var(--scale));
