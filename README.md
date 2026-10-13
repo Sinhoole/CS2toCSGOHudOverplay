@@ -8,7 +8,7 @@
 
 基于 Valve 官方 Game State Integration 的全屏透明覆盖层
 
-![version](https://img.shields.io/badge/version-2.1.0-CC0000?style=flat-square)
+![version](https://img.shields.io/badge/version-2.2.0-CC0000?style=flat-square)
 ![platform](https://img.shields.io/badge/platform-Windows-111111?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-111111?style=flat-square)
 

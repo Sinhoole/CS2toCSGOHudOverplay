@@ -8,7 +8,7 @@ Restore the CS:GO-era HUD in Counter-Strike 2
 
 A full-screen transparent overlay built on Valve's official Game State Integration
 
-![version](https://img.shields.io/badge/version-2.1.0-CC0000?style=flat-square)
+![version](https://img.shields.io/badge/version-2.2.0-CC0000?style=flat-square)
 ![platform](https://img.shields.io/badge/platform-Windows-111111?style=flat-square)
 ![license](https://img.shields.io/badge/license-MIT-111111?style=flat-square)
 
