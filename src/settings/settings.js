@@ -3337,7 +3337,7 @@ function buildWeaponListSvgCard() {
   {
     const box = el('div');
     box.append(el('div', 'card-title', '名称与行距'));
-    box.append(el('div', 'card-hint', '每行左侧可以显示字：选中的那一栏显示武器名（跟着一起亮），其余栏可以填「常显名称」当固定标签用。'));
+    box.append(el('div', 'card-hint', '每行图标下方可以显示字：选中的那一栏显示武器名（跟着一起亮），其余栏可以填「常显名称」当固定标签用。'));
     nameHead.append(box);
   }
   nameCard.append(nameHead);
@@ -3354,6 +3354,8 @@ function buildWeaponListSvgCard() {
     field.append(el('div', 'note', '只显示当前手持的那一件：投掷物行只显示手上那颗的名字，其余不显示。'));
     nameBody.append(field);
   }
+  nameBody.append(fieldRow('名称字号', numControl({ type: 'num', label: '名称字号', path: base + '.nameSize', min: 8, max: 28, step: 1, unit: 'px' }),
+    '名称字比编号小一号看着更干净。'));
   nameBody.append(fieldRow('名称颜色', colorControl({ type: 'color', label: '名称颜色', path: base + '.nameColor', fallback: '#FFFFFF' })));
   for (let i = 1; i <= 5; i++) {
     nameBody.append(fieldRow(`${i} 号栏常显名称`, textControl({

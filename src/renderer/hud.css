@@ -808,8 +808,8 @@ body { user-select: none; cursor: default; }
 .weapon-bar-svg .slot {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: flex-end;   /* 图标右对齐，往左排列（宽的在左、窄的齐右） */
+  flex-direction: column;      /* 图标在上、名称在下 */
+  align-items: flex-end;       /* 两者都贴右缘：图标仍成一列、名称右对齐 */
   min-height: calc(36px * var(--scale));
 }
 /* 1 / 2 / 3 号槽位图标左右镜像（步枪·手枪·刀 朝向翻转）；4、5 号不镜像 */
@@ -831,7 +831,11 @@ body { user-select: none; cursor: default; }
 .weapon-bar-svg .wnum {
   position: absolute;
   right: calc(-26px * var(--scale));   /* 相对等宽槽位右缘 → 所有编号同一 x，列对齐 */
-  bottom: calc(-4px * var(--scale));
+  top: 0;
+  height: calc(46px * var(--scale));   /* 和 .ico 等高 → 编号垂直居中在「图标那一行」，
+                                          名称出现在下方时编号也不会跟着往下掉 */
+  display: flex;
+  align-items: center;
   font-size: calc(18px * var(--scale));
   font-weight: 700;
   line-height: 1;
@@ -847,6 +851,7 @@ body { user-select: none; cursor: default; }
   display: flex;
   align-items: center;
   gap: calc(6px * var(--scale));
+  min-height: calc(46px * var(--scale));   /* 与 .ico 等高 → 投掷物行竖中也和编号对齐 */
 }
 .weapon-bar-svg .grenades .ico { width: calc(34px * var(--scale)); height: calc(34px * var(--scale)); }
 .weapon-bar-svg .grenades .ico.hot {
@@ -856,14 +861,13 @@ body { user-select: none; cursor: default; }
 }
 .weapon-bar-svg .slot.empty { display: none; }
 
-/* ---- 行内名称（在图标左侧，随行右对齐一起往左排） ----
+/* ---- 行内名称（在图标「下方」，跟着图标右缘对齐） ----
    注意：它是 .slot 的直接子元素、不在 .ico 里 ——
    1) 不受 1/2/3 号槽位的镜像 transform 影响，文字不会反；
-   2) 槽位是 flex-end 打包，加进来只把整行往左撑，图标与编号位置不动。 */
+   2) 参与布局（不是浮在 gap 上），所以行高真的会长出来，「行间距」负责把两行分开。 */
 .weapon-bar-svg .wl-name {
-  flex: 0 0 auto;
-  margin-right: calc(7px * var(--scale));
-  font-size: calc(17px * var(--scale));
+  margin-top: calc(3px * var(--scale));
+  font-size: calc(var(--wl-svg-name-size, 13px) * var(--scale));
   font-weight: 700;
   line-height: 1.15;
   white-space: nowrap;

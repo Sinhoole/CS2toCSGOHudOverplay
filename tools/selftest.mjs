@@ -856,7 +856,11 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   check('右侧编号列对齐：槽位等宽(stretch)',
     /\.weapon-bar-svg \{[^}]*align-items: stretch/.test(hudCss));
   check('武器图标右对齐、往左排列',
-    /\.weapon-bar-svg \.slot \{[^}]*justify-content: flex-end/.test(hudCss));
+    /\.weapon-bar-svg \.slot \{[^}]*align-items: flex-end/.test(hudCss));
+  check('槽位改为纵向（图标上、名称下）',
+    /\.weapon-bar-svg \.slot \{[^}]*flex-direction: column/.test(hudCss));
+  check('编号垂直居中在图标那一行（名称在下方也不掉）',
+    /\.weapon-bar-svg \.wnum \{[^}]*top: 0[^}]*height: calc\(46px \* var\(--scale\)\)/.test(hudCss));
   check('右侧编号列对齐：编号统一右缘',
     /\.weapon-bar-svg \.wnum \{[^}]*right: calc\(-26px/.test(hudCss));
   check('1/2/3 号槽位图标左右镜像',
@@ -881,8 +885,14 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     /\.weapon-bar-svg \.wl-name \{[^}]*white-space: nowrap/.test(hudCss)
     && /\.weapon-bar-svg \.wl-name\.on\.pin/.test(hudCss)
     && /\.weapon-bar-svg \.wl-name\.on\.act/.test(hudCss));
+  check('DEFAULTS 含名称字号 nameSize',
+    DEF.modules.weaponList.svg.nameSize === 13);
+  check('名称字号走 CSS 变量（可在设置里调）',
+    /\.weapon-bar-svg \.wl-name \{[^}]*font-size: calc\(var\(--wl-svg-name-size, 13px\) \* var\(--scale\)\)/.test(hudCss));
+  check('名称参与布局（在图标下方，不是浮在行距上）',
+    /\.weapon-bar-svg \.wl-name \{[^}]*margin-top:/.test(hudCss));
   check('名称在 .ico 之外（不被 1/2/3 的镜像 transform 翻转）',
-    /<span class="wl-name"><\/span><div class="ico">/.test(read('src/renderer/index.html')));
+    /<div class="ico"><\/div><span class="wl-name"><\/span>/.test(read('src/renderer/index.html')));
   check('HUD 渲染层读 showName / slotNames / names / labels',
     hudJs.includes('svg.showName !== false') && hudJs.includes('svg.slotNames')
     && hudJs.includes('info.names') && hudJs.includes('info.labels'));
@@ -890,11 +900,11 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     hudJs.includes('empty && !pinName'));
   check('applyModules 写出行距/放大/名称颜色变量',
     hudJs.includes("'--wl-svg-gap'") && hudJs.includes("'--wl-svg-active-scale'")
-    && hudJs.includes("'--wl-svg-name-color'"));
-  check('设置页有「名称与行距」卡（行距/放大/名称/常显名）',
+    && hudJs.includes("'--wl-svg-name-size'") && hudJs.includes("'--wl-svg-name-color'"));
+  check('设置页有「名称与行距」卡（行距/放大/名称字号/常显名）',
     setJs.includes('名称与行距') && setJs.includes("path: base + '.gap'")
     && setJs.includes("path: base + '.activeScale'") && setJs.includes("path: base + '.showName'")
-    && setJs.includes('.slotNames.'));
+    && setJs.includes("path: base + '.nameSize'") && setJs.includes('.slotNames.'));
   check('设置页可跳去「文字替换」改武器名',
     setJs.includes("activate('text')"));
 

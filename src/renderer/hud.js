@@ -1329,6 +1329,7 @@ function applyModules(cfg) {
   root.setProperty('--wl-svg-glow-color', wls.glowColor || '#3b82f6');
   root.setProperty('--wl-svg-gap', `${wlsN(wls.gap, 12)}px`);
   root.setProperty('--wl-svg-active-scale', String(wlsN(wls.activeScale, 1.18)));
+  root.setProperty('--wl-svg-name-size', `${wlsN(wls.nameSize, 13)}px`);
   root.setProperty('--wl-svg-name-color', wls.nameColor || '#FFFFFF');
 
   // 名单面板：底栏浓度走 barAlpha，其余是各类文字的颜色
