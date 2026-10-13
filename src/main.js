@@ -3,6 +3,7 @@
 const { app, BrowserWindow, screen, Menu, Tray, ipcMain, shell, dialog, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 
 const cfgMod = require('./config');
 const {
@@ -658,6 +659,9 @@ function createSettingsWindow() {
     // --shot-settings-scroll=800 抓长页面的下半截
     const scrollArg = process.argv.find((a) => a.startsWith('--shot-settings-scroll='));
     const scrollTo = scrollArg ? Number(scrollArg.slice('--shot-settings-scroll='.length)) || 0 : 0;
+    // --shot-settings-wait=3000 给「要联网取数据的页」多留点时间（比如更新公告）
+    const waitArg = process.argv.find((a) => a.startsWith('--shot-settings-wait='));
+    const waitMs = waitArg ? Number(waitArg.slice('--shot-settings-wait='.length)) || 1400 : 1400;
 
     setTimeout(async () => {
       try {
@@ -674,7 +678,7 @@ function createSettingsWindow() {
         console.error('[shot] 设置界面截图失败:', e.message);
       }
       app.quit();
-    }, 1400);
+    }, waitMs);
   });
 }
 
@@ -733,6 +737,54 @@ function getEquipIcons() {
     equipIconsCache = { files: {}, names: [] };
   }
   return equipIconsCache;
+}
+
+// ============================================================
+// 更新公告：把博客上的公告页抓回来给设置界面「原生」渲染
+// ------------------------------------------------------------
+// 不用 webview / BrowserView：那玩意一眼就能看出是个嵌进去的壳，还会带自己的滚动条。
+// 这里只把 HTML 文本取回来，渲染层解析 + 白名单过滤后按设置界面自己的排版画出来。
+// 主进程只负责「取」，不解释内容。
+// ============================================================
+
+const CHANGELOG_URL = 'https://blog.taoxi.ink/p/202610131828/';
+const CHANGELOG_TTL = 10 * 60 * 1000;   // 10 分钟内重复打开直接用缓存，别一直敲人家服务器
+let changelogCache = null;              // { html, url, fetchedAt }
+
+/** 取一个 URL 的文本（只跟 http/https、最多 5 跳重定向、12 秒超时、2MB 上限） */
+function fetchHtmlText(url, redirects = 0) {
+  return new Promise((resolve, reject) => {
+    if (redirects > 5) return reject(new Error('重定向过多'));
+    let settled = false;
+    const fail = (e) => { if (!settled) { settled = true; reject(e); } };
+    let req = null;
+    try {
+      req = https.get(url, {
+        headers: { 'User-Agent': `OverplayHUD/${app.getVersion()}`, Accept: 'text/html,*/*' },
+        timeout: 12000,
+      }, (res) => {
+        const code = res.statusCode || 0;
+        if (code >= 300 && code < 400 && res.headers.location) {
+          res.resume();
+          const next = new URL(res.headers.location, url).toString();
+          if (!/^https?:\/\//i.test(next)) return fail(new Error('重定向到非 http 地址'));
+          settled = true;
+          return resolve(fetchHtmlText(next, redirects + 1));
+        }
+        if (code !== 200) { res.resume(); return fail(new Error('HTTP ' + code)); }
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (c) => {
+          body += c;
+          if (body.length > 2 * 1024 * 1024) { res.destroy(); fail(new Error('页面过大')); }
+        });
+        res.on('end', () => { if (!settled) { settled = true; resolve(body); } });
+        res.on('error', fail);
+      });
+    } catch (e) { return fail(e); }
+    req.on('timeout', () => { req.destroy(); fail(new Error('请求超时')); });
+    req.on('error', fail);
+  });
 }
 
 function registerSettingsIpc() {
@@ -955,6 +1007,25 @@ function registerSettingsIpc() {
       return { ok: true, url: u };
     } catch (e) {
       return { ok: false, error: e.message };
+    }
+  });
+
+  // 更新公告：强制刷新传 force=true。抓失败但手上还有旧内容时，退而给旧内容（stale）。
+  ipcMain.handle('settings:changelog', async (_e, force) => {
+    const now = Date.now();
+    if (!force && changelogCache && now - changelogCache.fetchedAt < CHANGELOG_TTL) {
+      return { ok: true, url: changelogCache.url, html: changelogCache.html, fetchedAt: changelogCache.fetchedAt, cached: true };
+    }
+    try {
+      const html = await fetchHtmlText(CHANGELOG_URL);
+      changelogCache = { html, url: CHANGELOG_URL, fetchedAt: Date.now() };
+      return { ok: true, url: changelogCache.url, html, fetchedAt: changelogCache.fetchedAt, cached: false };
+    } catch (e) {
+      const msg = (e && e.message) || String(e);
+      if (changelogCache) {
+        return { ok: true, url: changelogCache.url, html: changelogCache.html, fetchedAt: changelogCache.fetchedAt, cached: true, stale: true, error: msg };
+      }
+      return { ok: false, url: CHANGELOG_URL, error: msg };
     }
   });
 

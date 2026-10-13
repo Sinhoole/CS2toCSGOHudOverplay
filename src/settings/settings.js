@@ -34,6 +34,10 @@ const MODULES = [
 const SECTIONS = [
   { id: 'home', ico: 'home', name: '首页', group: 'home', build: buildHomeSection },
 
+  // 更新公告：内容来自作者博客的公告页，主进程取回 HTML、渲染层过滤后原生排版。
+  // 只有切到这一页才会联网（buildSection 启动时会把所有页都建出来）。
+  { id: 'update', ico: 'update', name: '更新公告', group: 'home', build: buildUpdateSection },
+
   // 装完 GSI 之后第一件该做的事：把原生 HUD 关掉、把雷达和队友标识留住。
   // 命令目录来自主进程 src/gamecmds.js（唯一权威）。
   { id: 'gamecmds', ico: 'gamecmds', name: '原生 HUD 命令', build: buildGamecmdsSection },
@@ -3210,6 +3214,195 @@ function abCell(k, vEl, cls) {
   return d;
 }
 
+// ============================================================
+// 更新公告
+// ------------------------------------------------------------
+// 刻意不用 iframe / webview / BrowserView：
+//   ① 那种一眼就能看出是「嵌进来的网页」，还自带一条不属于本程序的滚动条；
+//   ② 等于把一个外部页面整段丢进设置界面里执行，边界很不干净。
+// 这里只让主进程把公告页的 HTML「文本」取回来，在渲染层解析出正文，
+// 白名单过滤（脚本 / 表单 / 内嵌框架一律丢掉）后按设置界面自己的排版画出来。
+// 结果就是一页原生内容，字体配色和别的设置页完全一致。
+// ============================================================
+
+const CHANGELOG_URL = 'https://blog.taoxi.ink/p/202610131828/';
+
+/** 相对地址 → 绝对地址；非 http(s) 一律拒绝（javascript: / data: 之类直接不给） */
+function absHttpUrl(u, base) {
+  if (!u) return '';
+  try {
+    const abs = new URL(String(u).trim(), base || CHANGELOG_URL).toString();
+    return /^https?:\/\//i.test(abs) ? abs : '';
+  } catch (_) { return ''; }
+}
+
+// 允许保留的标签；清单之外的一律「剥壳留字」。
+// 这样博客以后改版加了奇怪的东西，也不会把脚本 / 表单 / 内嵌框架带进来。
+const UP_KEEP = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'UL', 'OL', 'LI',
+  'BLOCKQUOTE', 'PRE', 'CODE', 'HR', 'BR', 'STRONG', 'B', 'EM', 'I', 'U', 'S', 'DEL',
+  'A', 'IMG', 'FIGURE', 'FIGCAPTION', 'TABLE', 'THEAD', 'TBODY', 'TFOOT', 'TR', 'TH', 'TD',
+  'SPAN', 'DIV', 'DL', 'DT', 'DD', 'SUP', 'SUB', 'MARK', 'KBD']);
+const UP_DROP = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'FORM', 'INPUT',
+  'BUTTON', 'TEXTAREA', 'SELECT', 'LINK', 'META', 'SVG', 'CANVAS', 'VIDEO', 'AUDIO', 'BASE']);
+
+/** 按白名单把节点树复制进当前文档（只留 href / src / alt / title 这几个属性） */
+function upClone(node, doc, base) {
+  const out = [];
+  for (const n of Array.from(node.childNodes)) {
+    if (n.nodeType === 3) { out.push(doc.createTextNode(n.nodeValue)); continue; }
+    if (n.nodeType !== 1) continue;                          // 注释 / 处理指令全丢
+    const tag = n.tagName;
+    if (UP_DROP.has(tag)) continue;
+    const kids = upClone(n, doc, base);
+    if (!UP_KEEP.has(tag)) { out.push(...kids); continue; }  // 剥壳留字
+    const e = doc.createElement(tag.toLowerCase());
+    if (tag === 'A') {
+      const href = absHttpUrl(n.getAttribute('href'), base);
+      if (href) {
+        e.setAttribute('href', href);
+        e.setAttribute('rel', 'noreferrer noopener');
+      }
+    } else if (tag === 'IMG') {
+      const src = absHttpUrl(n.getAttribute('src'), base);
+      if (!src) continue;                                    // 不安全的图直接丢
+      e.setAttribute('src', src);
+      e.setAttribute('alt', n.getAttribute('alt') || '');
+      e.setAttribute('loading', 'lazy');
+    }
+    for (const k of kids) e.appendChild(k);
+    out.push(e);
+  }
+  return out;
+}
+
+/** 从公告页 HTML 里挖出标题 / 元信息 / 正文三段 */
+function parseChangelog(html) {
+  const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+  const titleEl = doc.querySelector('.post-title') || doc.querySelector('article h1') || doc.querySelector('h1');
+  const metaEl = doc.querySelector('.post-meta');
+  const bodyEl = doc.querySelector('.post-content') || doc.querySelector('.md-content')
+    || doc.querySelector('article') || doc.body;
+
+  const title = titleEl ? titleEl.textContent.trim() : '';
+  const meta = metaEl ? metaEl.textContent.replace(/\s+/g, ' ').trim() : '';
+
+  const holder = document.createElement('div');
+  if (bodyEl) for (const n of upClone(bodyEl, document, CHANGELOG_URL)) holder.appendChild(n);
+  return { title, meta, node: holder };
+}
+
+function fmtStamp(ts) {
+  const d = new Date(Number(ts) || Date.now());
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function buildUpdateSection(sec) {
+  const wrap = el('div', 'section');
+  wrap.dataset.section = sec.id;
+  wrap.append(sectionHead('更新公告',
+    '公告取自作者博客的公告页。程序只把这篇网页取回来、自己排版画出来，'
+    + '所以你看到的是一页原生内容，而不是嵌进来的网页。'));
+
+  const card = el('div', 'card');
+  const head = el('div', 'card-head');
+  const box = el('div');
+  box.append(el('div', 'card-title', '最新公告'));
+  box.append(el('div', 'card-hint', CHANGELOG_URL));
+  const tools = el('div', 'head-tools');
+  const bOpen = el('button', 'mini', '在浏览器打开');
+  const bCopy = el('button', 'mini', '复制网址');
+  const bRefresh = el('button', 'mini', '刷新');
+  tools.append(bOpen, bCopy, bRefresh);
+  head.append(box, tools);
+  card.append(head);
+
+  const body = el('div', 'card-body');
+  const doc = el('div', 'up-doc');
+  body.append(doc);
+  card.append(body);
+  wrap.append(card);
+
+  const src = newCard('这一页是怎么来的', '');
+  src.body.append(el('div', 'up-note',
+    '程序用只读的方式请求上面那个网址，取回 HTML 后按白名单过滤（脚本、表单、内嵌框架一律丢掉），'
+    + '再按设置界面自己的字体与配色排版。文字和图片都来自那篇公告，内容本身不会被改动。'
+    + '想核对原文，点右上角「在浏览器打开」。'));
+  wrap.append(src.card);
+
+  let loaded = false;
+  let loading = false;
+
+  const showState = (cls, title, detail, retry) => {
+    doc.innerHTML = '';
+    const st = el('div', 'up-state' + (cls ? ' ' + cls : ''));
+    st.append(el('div', 'up-state-t', title));
+    if (detail) st.append(el('div', 'up-state-d', detail));
+    if (retry) {
+      const b = el('button', 'btn', '再试一次');
+      b.addEventListener('click', () => load(true));
+      st.append(b);
+    }
+    doc.append(st);
+  };
+
+  const paint = (data) => {
+    const parsed = parseChangelog(data.html);
+    doc.innerHTML = '';
+    const art = el('div', 'up-article');
+    if (parsed.title) art.append(el('h1', 'up-title', parsed.title));
+    const bits = [];
+    if (parsed.meta) bits.push(parsed.meta);
+    if (data.fetchedAt) bits.push('本地取回 ' + fmtStamp(data.fetchedAt));
+    if (bits.length) art.append(el('div', 'up-meta', bits.join('  ·  ')));
+    if (data.stale) art.append(el('div', 'up-badge', '这次没连上，下面是上一次取到的内容'));
+    art.append(parsed.node);
+    doc.append(art);
+  };
+
+  async function load(force) {
+    if (loading) return;
+    loading = true;
+    bRefresh.disabled = true;
+    if (!loaded) showState('', '正在取公告…', '');
+    let r = null;
+    try {
+      r = await window.oph.changelog(!!force);
+    } catch (e) {
+      r = { ok: false, error: (e && e.message) || String(e) };
+    }
+    loading = false;
+    bRefresh.disabled = false;
+    if (!r || !r.ok) {
+      showState('err', '没能取到公告',
+        ((r && r.error) || '网络不可用，或者这个地址暂时打不开。')
+        + ' 也可以直接点右上角「在浏览器打开」去看原文。',
+        true);
+      return;
+    }
+    loaded = true;
+    paint(r);
+  }
+
+  bRefresh.addEventListener('click', () => load(true));
+  bOpen.addEventListener('click', () => window.oph.openExternal(CHANGELOG_URL));
+  bCopy.addEventListener('click', () => { window.oph.copyText(CHANGELOG_URL); toast('网址已复制', 'ok'); });
+
+  // 正文里的链接一律丢给系统浏览器 —— 绝不能让设置窗口自己跳走（跳走就回不来了）
+  doc.addEventListener('click', (e) => {
+    const a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    e.preventDefault();
+    window.oph.openExternal(a.getAttribute('href'));
+  });
+
+  // 懒加载：只有真正切到这一页才联网。
+  // 注意 buildSection 会在启动时把所有页都建出来，不懒加载就等于「一开设置就发请求」。
+  wrap._onActivate = () => { if (!loaded && !loading) load(false); };
+
+  return wrap;
+}
+
 function buildTutorialSection(sec) {
   const wrap = el('div', 'section');
   wrap.dataset.section = sec.id;
@@ -3527,6 +3720,9 @@ function activate(id) {
   for (const s of document.querySelectorAll('.section')) {
     s.classList.toggle('active', s.dataset.section === id);
   }
+  // 有些页（更新公告）要联网/算数据，只有真正切过去才干活 —— 见 wrap._onActivate
+  const sec = document.querySelector('.section[data-section="' + id + '"]');
+  if (sec && typeof sec._onActivate === 'function') sec._onActivate();
 }
 
 function rebuild() {

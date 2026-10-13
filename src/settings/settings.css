@@ -1457,3 +1457,95 @@ textarea.tpl:focus { outline: none; border-color: var(--accent); box-shadow: ins
 }
 
 .nav-ico.about { background: var(--accent); }
+
+/* ============================================================
+   更新公告
+   ------------------------------------------------------------
+   这一页是「取回 HTML 文本 → 自己排版」，不是 iframe。
+   所以：没有第二条滚动条、没有陌生的字体配色，整页跟着本界面走。
+   正文只保留文字与图片，样式全部由下面这套接管。
+   ============================================================ */
+
+.nav-ico.update { background: #B26A00; }
+
+.up-doc { min-height: 110px; }
+
+/* ---- 取数据中 / 取不到 ---- */
+.up-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 40px 16px; text-align: center;
+}
+.up-state-t { font-family: var(--font-serif); font-size: 15px; font-weight: 700; color: var(--ink); }
+.up-state-d { font-size: 12px; line-height: 1.65; color: var(--n500); max-width: 470px; }
+.up-state .btn { margin-top: 10px; }
+
+/* ---- 文章 ---- */
+.up-article {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.82;
+  color: var(--ink);
+  max-width: 730px;
+}
+.up-title {
+  font-family: var(--font-serif);
+  font-size: 24px; font-weight: 700; line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin: 0 0 7px;
+}
+.up-meta {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--n500);
+  padding-bottom: 12px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--ink);
+}
+.up-badge {
+  display: inline-block; margin-bottom: 14px; padding: 4px 9px;
+  border-left: 4px solid var(--warn);
+  background: #FBF3E2; color: #6B4600;
+  font-family: var(--font-ui); font-size: 11px;
+}
+
+/* 正文元素：一律用本界面的纸白 / 油墨 / 编辑红，绝不沿用博客那套配色 */
+.up-article h1, .up-article h2, .up-article h3,
+.up-article h4, .up-article h5, .up-article h6 {
+  font-family: var(--font-serif); color: var(--ink); line-height: 1.3; margin: 22px 0 8px;
+}
+.up-article h1 { font-size: 20px; }
+.up-article h2 { font-size: 17px; padding-bottom: 5px; border-bottom: 1px solid var(--muted); }
+.up-article h3 { font-size: 15px; }
+.up-article h4, .up-article h5, .up-article h6 { font-size: 14px; }
+.up-article p { margin: 10px 0; }
+.up-article ul, .up-article ol { margin: 10px 0; padding-left: 22px; }
+.up-article li { margin: 4px 0; }
+.up-article a {
+  color: var(--accent); text-decoration: none;
+  border-bottom: 1px solid var(--accent);
+}
+.up-article a:hover { background: var(--accent); color: var(--paper); }
+.up-article strong { font-weight: 700; }
+.up-article hr { border: 0; border-top: 1px solid var(--muted); margin: 20px 0; }
+.up-article blockquote {
+  margin: 14px 0; padding: 4px 0 4px 14px;
+  border-left: 4px solid var(--ink); color: var(--n700);
+}
+.up-article code {
+  font-family: var(--font-mono); font-size: 12.5px;
+  background: var(--panel-2); border: 1px solid var(--muted); padding: 1px 5px;
+}
+/* 代码块跟着正文折行，不给自己开第二条滚动条 */
+.up-article pre {
+  margin: 14px 0; padding: 12px;
+  background: var(--panel-2); border: 1px solid var(--ink);
+  white-space: pre-wrap; word-break: break-word;
+}
+.up-article pre code { background: none; border: 0; padding: 0; line-height: 1.6; }
+.up-article img { max-width: 100%; height: auto; border: 1px solid var(--ink); margin: 8px 0; }
+.up-article figure { margin: 14px 0; }
+.up-article figcaption { font-size: 11px; color: var(--n500); margin-top: 5px; }
+.up-article table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 13px; }
+.up-article th, .up-article td { border: 1px solid var(--ink); padding: 6px 9px; text-align: left; }
+.up-article th { background: var(--panel-2); font-family: var(--font-ui); font-weight: 700; }
+
+.up-note { font-size: 12px; line-height: 1.7; color: var(--n600); }

@@ -70,6 +70,12 @@ contextBridge.exposeInMainWorld('oph', {
   /** 关于页：版本号 / 作者博客等（版本现取，界面不写死） */
   appInfo: () => ipcRenderer.invoke('settings:app-info'),
 
+  /**
+   * 更新公告：主进程去博客把公告页取回来（返回原始 HTML 文本，渲染层自己解析 + 过滤）。
+   * 传 true 强制绕过 10 分钟缓存。抓失败时若手上有旧内容会带回 stale=true。
+   */
+  changelog: (force) => ipcRenderer.invoke('settings:changelog', !!force),
+
   /** 武器/刀/投掷物 SVG 图标 map（文件名 → 归一化 SVG 字符串） */
   equipIcons: () => ipcRenderer.invoke('settings:equip-icons'),
   /** 用系统默认浏览器打开外部链接（主进程只放行 http / https） */

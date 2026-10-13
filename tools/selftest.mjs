@@ -1075,5 +1075,58 @@ console.log('\n[14] 原生 HUD / 游戏命令（写进 CS2 的配套 cfg）');
   check('教程里有这一节', read('TUTORIAL.md').includes('原生 HUD'));
 }
 
+// ============================================================
+// 更新公告页：取回 HTML 文本 → 白名单过滤 → 自己排版（绝不是 iframe）
+// ============================================================
+{
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(import.meta.dirname, '..');
+  const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+
+  const mainJs = read('src/main.js');
+  const setJs = read('src/settings/settings.js');
+  const setPre = read('src/settings/preload.js');
+  const setHtml = read('src/settings/index.html');
+  const setCss = read('src/settings/settings.css');
+
+  check('主进程用 https 取公告页（不是 webview / BrowserView）',
+    mainJs.includes("require('https')") && mainJs.includes('fetchHtmlText'));
+  check('公告地址就是博客那篇',
+    mainJs.includes('https://blog.taoxi.ink/p/202610131828/'));
+  check('settings:changelog 通道：10 分钟缓存 + 抓失败退回旧内容',
+    mainJs.includes("ipcMain.handle('settings:changelog'") && mainJs.includes('CHANGELOG_TTL')
+    && mainJs.includes('stale: true'));
+  check('抓取有超时 / 大小 / 跳数上限',
+    mainJs.includes('redirects > 5')
+    && mainJs.includes('2 * 1024 * 1024')
+    && mainJs.includes('timeout: 12000'));
+  check('preload 暴露 changelog',
+    setPre.includes("invoke('settings:changelog'"));
+  check('设置侧有「更新公告」分区（挂在总览组）',
+    /id: 'update'[^\n]*group: 'home'[^\n]*build: buildUpdateSection/.test(setJs));
+  check('公告页没有 iframe / webview 容器（要原生感）',
+    !/<iframe|<webview/i.test(setHtml) && !/<iframe|<webview/i.test(setJs)
+    && !setJs.includes("createElement('iframe')"));
+  check('正文走标签白名单（脚本 / 表单 / 内嵌框架一律丢）',
+    setJs.includes('UP_KEEP') && setJs.includes('UP_DROP')
+    && setJs.includes("'SCRIPT', 'STYLE', 'IFRAME'"));
+  check('正文链接只放行 http(s)，相对地址转绝对',
+    setJs.includes('function absHttpUrl') && setJs.includes('absHttpUrl(')
+    && setJs.includes('https?:'));
+  check('点正文链接交给系统浏览器，设置窗口自己不跳走',
+    setJs.includes("closest('a[href]')") && setJs.includes('e.preventDefault()')
+    && setJs.includes('openExternal'));
+  check('懒加载：切到这一页才联网（启动不请求）',
+    setJs.includes('wrap._onActivate') && /function activate\(id\)[\s\S]{0,500}_onActivate/.test(setJs));
+  check('公告正文用本界面的排版（不是博客那套配色）',
+    setCss.includes('.up-article') && setCss.includes('.up-title') && setCss.includes('.up-meta'));
+  check('代码块折行（不给页面加第二条滚动条）',
+    /\.up-article pre \{[^}]*white-space: pre-wrap/.test(setCss));
+  check('导航图标有 update 配色', setCss.includes('.nav-ico.update'));
+  check('截图钩子支持 --shot-settings-wait（联网页要多等一会）',
+    mainJs.includes('--shot-settings-wait='));
+}
+
 console.log(`\n结果：${pass} 通过 / ${fail} 失败\n`);
 process.exit(fail === 0 ? 0 : 1);
