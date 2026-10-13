@@ -102,6 +102,20 @@ const DEFAULTS = {
       offsetX: 0, offsetY: 0, scaleX: 1, scaleY: 1,
       rotate: 0, opacity: 1, glow: 0, glowColor: '#FFFFFF',
       textColor: '#FFFFFF', dimColor: 'rgba(242, 245, 247, 0.6)',
+      // SVG 图标态开关（与上面「文字态」各自独立，可并存）
+      svgMode: false,
+      // SVG 图标态专属配置：纯色剪影 + 选中放大辉光
+      svg: {
+        offsetX: -210, offsetY: 0, scaleX: 1, scaleY: 1, rotate: 0, opacity: 1,
+        color: '#3b82f6',          // 剪影底色（纯蓝）
+        activeColor: '#FFFFFF',    // 选中时剪影转白
+        glow: 6, glowColor: '#3b82f6',   // 选中辉光半径 / 颜色
+        idleHideMs: 3000,          // 预留键：开局显示毫秒后隐藏（本期未实装行为）
+        // 各槽位强制图标（留空 = 按武器名自动映射）
+        icons: { 1: '', 2: '', 3: '', 4: '', 5: '' },
+        // 刀型对照表：刀内部名 → 指定刀 SVG（留空 = 用同名刀形）
+        knives: {},
+      },
     },
     roster: {
       offsetX: 0, offsetY: 0, scaleX: 1, scaleY: 1,

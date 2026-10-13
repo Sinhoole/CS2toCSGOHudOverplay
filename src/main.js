@@ -17,6 +17,7 @@ const { install: installGsiCfg, inspect: inspectGsiCfg, CFG_NAME } = require('./
 const gamecmds = require('./gamecmds');
 const VARS = require('./vars');
 const { NAMES, GRENADE_KINDS } = require('./weapon-names');
+const equipIcons = require('./equip-icons');
 
 const USE_MOCK = process.argv.includes('--mock');
 const OPEN_SETTINGS = process.argv.includes('--settings');
@@ -142,7 +143,9 @@ function boot() {
   // 启动就把设置窗口摆出来。
   // 以前默认只留一个托盘图标，用户装完点开什么都没有，得先去右下角找 —— 太劝退。
   // 截图 / 自动化（--shot-*）和单独预览时不开，免得糊在一起。
-  const wantSettings = OPEN_SETTINGS
+  // 例外：--shot-settings 本身就是来截设置窗的，必须开（截图钩子挂在设置窗 did-finish-load 上）。
+  const SHOT_SETTINGS = process.argv.some((a) => a.startsWith('--shot-settings='));
+  const wantSettings = OPEN_SETTINGS || SHOT_SETTINGS
     || (cfg.openSettingsOnStart !== false && !SHOT_MODE && !OPEN_PREVIEW);
   if (wantSettings) openSettings();
   if (OPEN_PREVIEW) openPreview();
@@ -718,6 +721,20 @@ function applyConfig(next, persist) {
   return cfg;
 }
 
+let equipIconsCache = null;
+/** 读一次 asstes/icons/equipment，归一化后的图标 map 缓存在内存里 */
+function getEquipIcons() {
+  if (equipIconsCache) return equipIconsCache;
+  const dir = path.join(app.getAppPath(), 'asstes', 'icons', 'equipment');
+  try {
+    equipIconsCache = equipIcons.loadEquipIcons(dir);
+  } catch (e) {
+    console.error('[equip-icons] 加载失败:', e.message);
+    equipIconsCache = { files: {}, names: [] };
+  }
+  return equipIconsCache;
+}
+
 function registerSettingsIpc() {
   ipcMain.handle('settings:get', () => ({
     cfg,
@@ -844,11 +861,17 @@ function registerSettingsIpc() {
   // 变量表 + 可改名的武器清单。get 是函数、过不了 IPC，只传展示用的字段。
   ipcMain.handle('settings:vars', () => ({
     vars: VARS.map((v) => ({ key: v.key, label: v.label, sample: v.sample, group: v.group })),
-    weaponNames: NAMES,
+    // _knife 是稳定假键：匕首在 GSI 里有几十个内部名（weapon_knife / *_bayonet 等），
+    // 逐个列不现实。HUD 端 weaponLabel 对所有刀具回落读这个键。
+    weaponNames: Object.assign({ _knife: '匕首' }, NAMES),
     grenadeKinds: GRENADE_KINDS,
     // 购买轮盘的武器目录（设置页勾选武器用）
     buyCatalog: buycfg.publicCatalog(),
   }));
+
+  // 武器 / 刀 / 投掷物 SVG 图标：读一次缓存，HUD 与设置页各自按需取
+  ipcMain.handle('hud:equip-icons', () => getEquipIcons().files);
+  ipcMain.handle('settings:equip-icons', () => getEquipIcons().files);
 
   // 手动生成购买 cfg（保存设置时也会自动生成一次）
   ipcMain.handle('settings:generateBuycfg', () => {

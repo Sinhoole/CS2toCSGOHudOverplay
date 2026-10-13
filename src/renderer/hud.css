@@ -788,6 +788,66 @@ body { user-select: none; cursor: default; }
 .hud.woutline .slot .wnum { text-shadow: var(--outline-text); }
 
 /* ============================================================
+   武器栏 SVG 态：纯色剪影图标（独立开关，可与文字态并存）
+   ============================================================ */
+.weapon-bar-svg {
+  position: absolute;
+  right: calc(var(--inset-x) - var(--offx, 0px) + calc(20px * var(--scale)));
+  bottom: calc(var(--bar-h) + var(--inset-y) + var(--offy, 0px) + calc(16px * var(--scale)));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8px * var(--scale));
+  transform: translate(var(--m-weaponListSvg-x, 0px), var(--m-weaponListSvg-y, 0px))
+             rotate(var(--m-weaponListSvg-rot, 0deg))
+             scale(var(--m-weaponListSvg-sx, 1), var(--m-weaponListSvg-sy, 1));
+  transform-origin: bottom right;
+  pointer-events: none;
+}
+.weapon-bar-svg .slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(36px * var(--scale));
+}
+.weapon-bar-svg .ico {
+  width: calc(46px * var(--scale));
+  height: calc(46px * var(--scale));
+  color: var(--wl-svg-color, #3b82f6);
+  display: flex;
+  transition: color 150ms linear, filter 150ms linear, transform 150ms ease;
+}
+.weapon-bar-svg .ico svg { width: 100%; height: 100%; display: block; }
+.weapon-bar-svg .wnum {
+  position: absolute;
+  right: calc(-16px * var(--scale));
+  bottom: calc(-4px * var(--scale));
+  font-size: calc(18px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  color: var(--white);
+  text-shadow: 0 0 calc(2px * var(--scale)) #000;
+}
+.weapon-bar-svg .slot.active > .ico {
+  color: var(--wl-svg-active, #FFFFFF);
+  filter: drop-shadow(0 0 var(--wl-svg-glow, 0px) var(--wl-svg-glow-color, #3b82f6));
+  transform: scale(1.18);
+}
+.weapon-bar-svg .grenades {
+  display: flex;
+  align-items: center;
+  gap: calc(6px * var(--scale));
+}
+.weapon-bar-svg .grenades .ico { width: calc(34px * var(--scale)); height: calc(34px * var(--scale)); }
+.weapon-bar-svg .grenades .ico.hot {
+  color: var(--wl-svg-active, #FFFFFF);
+  filter: drop-shadow(0 0 var(--wl-svg-glow, 0px) var(--wl-svg-glow-color, #3b82f6));
+  transform: scale(1.18);
+}
+.weapon-bar-svg .slot.empty { display: none; }
+
+/* ============================================================
    自定义文本元素
    9 个锚点 + 位移 + 缩放，内容用 {变量} 插值。
    位移是屏幕像素、不受缩放影响；字号跟着全局 --scale 走。

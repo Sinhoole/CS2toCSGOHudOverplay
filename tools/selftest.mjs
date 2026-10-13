@@ -741,7 +741,12 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   check('preload 暴露 profiles 组', setPre.includes('profiles: {'));
 
   // ---- 教程 ----
-  check('设置侧有教程分区', /id: 'tutorial'/.test(setJs));
+  // 10-13 用户要求下线「教程 / 关于」设置页：文档 TUTORIAL.md 与渲染 / IPC 代码保留，
+  // 仅侧栏入口消失 —— 所以这里断言的是「入口没了、代码还在」。
+  check('教程设置页已下线（渲染代码保留）',
+    !/id: 'tutorial'/.test(setJs) && setJs.includes('function mdToHtml'));
+  check('关于设置页已下线（构建代码保留）',
+    !/id: 'about'/.test(setJs) && setJs.includes('function buildAboutSection'));
   check('内置极简 Markdown 渲染', setJs.includes('function mdToHtml'));
   check('主进程能读教程文件', main.includes('function readTutorial'));
   check('主进程有 open-tutorial / reveal-tutorial',
@@ -772,6 +777,55 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
       `${_imgs.length} 张引用，缺 ${_miss.join(',') || 0} 张`);
     check('打包配置包含 docs 目录', read('package.json').includes('"docs/**/*"'));
   }
+
+  // ---- 武器栏 SVG 态（与文字态并存、各自开关）----
+  const hudJs = read('src/renderer/hud.js');
+  check('武器栏文字态 section 改名后仍指向 module weaponList',
+    /id: 'weaponListText'/.test(setJs) && /module: 'weaponList'/.test(setJs));
+  check('设置侧有武器栏 SVG 态 section', /id: 'weaponListSvg'/.test(setJs));
+  check('SVG 态有独立构建函数', setJs.includes('function buildWeaponListSvgCard'));
+  check('SVG 态开关走 modules.weaponList.svgMode', setJs.includes("path: 'modules.weaponList.svgMode'"));
+  check('刀型对照表遍历 knifeFiles', setJs.includes('knifeFiles'));
+  check('主进程暴露 equip-icons IPC（HUD 与设置页）',
+    main.includes("ipcMain.handle('hud:equip-icons'")
+    && main.includes("ipcMain.handle('settings:equip-icons'"));
+
+  // config 默认值
+  check('DEFAULTS 含武器栏 svgMode 与 svg 配置',
+    cfgJs.includes('svgMode: false') && cfgJs.includes('icons: { 1:'));
+  {
+    const d = DEF.modules.weaponList;
+    check('DEFAULTS.weaponList.svg 字段完整',
+      d && d.svgMode === false
+      && d.svg && d.svg.glow === 6
+      && d.svg.icons && d.svg.icons['1'] === ''
+      && d.svg.knives && Object.keys(d.svg.knives).length === 0);
+  }
+  check('打包配置包含 asstes（图标目录）', read('package.json').includes('"asstes/**/*"'));
+
+  // equip-icons 模块：端到端校验映射 + 真目录加载
+  {
+    const E = require('../src/equip-icons.js');
+    check('equip-icons 导出 26 种刀型文件', E.KNIFE_FILES.length === 26);
+    check('weapon_ak47 → ak47.svg', E.weaponToIconName('weapon_ak47') === 'ak47.svg');
+    check('weapon_c4 → c4.svg', E.weaponToIconName('weapon_c4') === 'c4.svg');
+    check('投掷物 smoke → smokegrenade.svg', E.grenadeIdToIcon('smoke') === 'smokegrenade.svg');
+    check('投掷物 flame(燃烧瓶/燃烧弹) → incgrenade.svg', E.grenadeIdToIcon('flame') === 'incgrenade.svg');
+    check('isKnife(weapon_knife_butterfly)', E.isKnife('weapon_knife_butterfly') === true);
+    check('normalizeSvg 把 fill 强制成 currentColor',
+      /fill="currentColor"/.test(E.normalizeSvg('<svg viewBox="0 0 10 10"><path fill="#FFFFFF" d="M0 0z"/></svg>')));
+    const dir = path.join(root, 'asstes', 'icons', 'equipment');
+    let loaded = { files: {} };
+    try { loaded = E.loadEquipIcons(dir); } catch (e) { /* 目录缺失时跳过 */ }
+    const n = Object.keys(loaded.files || {}).length;
+    check('从 asstes 目录加载到全部武器图标', n >= 90, `${n} 个`);
+    check('加载结果含 ak47.svg 且已归一化',
+      !!loaded.files && !!loaded.files['ak47.svg'] && loaded.files['ak47.svg'].includes('currentColor'));
+  }
+  check('HUD 渲染层有 renderWeaponBarSvg', hudJs.includes('function renderWeaponBarSvg'));
+  check('HUD 按 svgMode 切换 SVG 栏显隐', hudJs.includes('wl.svgMode === true'));
+  check('applyModules 写出 SVG 栏位置/辉光变量', hudJs.includes('--m-weaponListSvg-x'));
+  check('index.html 含 weaponBarSvg 容器', read('src/renderer/index.html').includes('id="weaponBarSvg"'));
 }
 
 console.log('\n[14] 原生 HUD / 游戏命令（写进 CS2 的配套 cfg）');

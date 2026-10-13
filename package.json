@@ -45,15 +45,16 @@
       "output": "dist",
       "buildResources": "build"
     },
-    "files": [
-      "src/**/*",
-      "assets/**/*",
-      "cfg/**/*",
-      "docs/**/*",
-      "config.json",
-      "TUTORIAL.md",
-      "package.json"
-    ],
+  "files": [
+    "src/**/*",
+    "assets/**/*",
+    "asstes/**/*",
+    "cfg/**/*",
+    "docs/**/*",
+    "config.json",
+    "TUTORIAL.md",
+    "package.json"
+  ],
     "asarUnpack": [
       "assets/**",
       "cfg/**"

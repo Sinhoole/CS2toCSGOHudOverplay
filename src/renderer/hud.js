@@ -99,6 +99,10 @@ const prevScore = { ct: undefined, t: undefined };
 let prevKills = 0;
 let badgeEls = [];
 let slotEls = [];
+let svgSlotEls = [];
+let weaponBarSvgEl = null;
+let equipIconMap = {};
+let lastSnap = null;
 let prevGrenades = [];
 let prevGrenadeSep = '';
 
@@ -140,6 +144,16 @@ let devEventFired = false;
 // ---------- 配置 ----------
 badgeEls = Array.from(document.querySelectorAll('#killsBlock .badge'));
 slotEls = Array.from(document.querySelectorAll('#weaponBar .slot'));
+svgSlotEls = Array.from(document.querySelectorAll('#weaponBarSvg .slot'));
+weaponBarSvgEl = document.getElementById('weaponBarSvg');
+
+// 加载 SVG 图标（武器 / 刀 / 投掷物剪影）；到货后再渲染一次武器栏
+if (BRIDGE.equipIcons) {
+  BRIDGE.equipIcons().then((m) => {
+    equipIconMap = (m && typeof m === 'object') ? m : {};
+    if (lastSnap) renderWeaponBarSvg(lastSnap);
+  }).catch(() => {});
+}
 
 BRIDGE.onConfig(({ cfg, bounds }) => {
   currentCfg = cfg;
@@ -269,6 +283,7 @@ BRIDGE.onSnapshot((s) => {
 function render(s) {
   if (!s) return;
 
+  lastSnap = s;
   root.classList.toggle('hidden', !s.visible);
 
   // ---- 血量：白 → 红 → 红+发光，三级按阈值切换 ----
@@ -321,6 +336,7 @@ function render(s) {
 
   // ---- 右侧武器栏 ----
   renderWeaponBar(s);
+  renderWeaponBarSvg(s);
 
   // ---- 比分（变化时一帧放大提亮）----
   setScore(nodes.scoreCT, s.scoreCT, 'ct');
@@ -834,6 +850,89 @@ function renderWeaponBar(s) {
 }
 
 /**
+ * 武器图标文件名解析（与 src/equip-icons.js 同一套规则，渲染层内联一份，
+ * 因为渲染层不能 require）。
+ */
+function isKnifeName(name) {
+  if (!name) return false;
+  return /^weapon_knife/.test(name)
+    || /bayonet/.test(name)
+    || name === 'weapon_melee'
+    || name === 'weapon_knifegg';
+}
+function weaponIconFile(name) {
+  if (!name) return '';
+  let n = String(name).replace(/^weapon_/, '');
+  if (n === 'c4') return 'c4.svg';
+  return n + '.svg';
+}
+function grenadeIconFile(id) {
+  const m = { flame: 'incgrenade.svg', smoke: 'smokegrenade.svg', flash: 'flashbang.svg', he: 'hegrenade.svg', decoy: 'decoy.svg' };
+  return m[id] || '';
+}
+
+/**
+ * 武器栏 SVG 态：纯色剪影图标，与文字态并存（由各自开关控制）。
+ * 图标来自主进程预归一化的 equipIconMap（文件名 → SVG 字符串）。
+ */
+function renderWeaponBarSvg(s) {
+  if (!weaponBarSvgEl || !svgSlotEls.length) return;
+
+  const wl = (currentCfg.modules && currentCfg.modules.weaponList) || {};
+  const svg = wl.svg || {};
+  const on = wl.svgMode === true;
+  weaponBarSvgEl.style.display = on ? '' : 'none';
+  if (!on) return;
+
+  const icons = svg.icons || {};
+  const knives = svg.knives || {};
+  const list = s.slots || [];
+
+  svgSlotEls.forEach((el, i) => {
+    const info = list[i];
+    const isGrenade = info && info.slot === 4;
+    const empty = !info || (isGrenade ? (info.chars || []).length === 0 : !info.name);
+
+    el.classList.toggle('empty', empty);
+    el.classList.toggle('active', !!info && !!info.active && !isGrenade);
+
+    if (isGrenade) {
+      el.classList.toggle('active', !!info && !!info.active);
+      const g = el.querySelector('.grenades');
+      if (!g) return;
+      const ids = info.ids || [];
+      const activeIndex = (typeof info.activeIndex === 'number') ? info.activeIndex : -1;
+      const sig = ids.join(',') + '|' + activeIndex + '|' + (icons[4] || '');
+      if (g.dataset.sig === sig) return;   // 没变就不重建，避免每帧 innerHTML 闪烁
+      g.dataset.sig = sig;
+      g.innerHTML = '';
+      ids.forEach((id, gi) => {
+        const file = icons[4] ? icons[4] : grenadeIconFile(id);
+        const svgStr = equipIconMap[file] || '';
+        const d = document.createElement('div');
+        d.className = 'ico' + (gi === activeIndex ? ' hot' : '');
+        if (svgStr) d.innerHTML = svgStr;
+        g.appendChild(d);
+      });
+      return;
+    }
+
+    const ico = el.querySelector('.ico');
+    if (!ico) return;
+    const name = info ? info.name : '';
+    let file = '';
+    if (icons[i]) file = icons[i];
+    else if (isKnifeName(name)) file = knives[name] || weaponIconFile(name);
+    else file = weaponIconFile(name);
+
+    if (ico.dataset.file !== file) {
+      ico.dataset.file = file;
+      ico.innerHTML = equipIconMap[file] || '';
+    }
+  });
+}
+
+/**
  * 武器显示名。用户自定义的名字（config 的 text.weaponNames）优先，
  * 没配就用 GSI 层算好的默认中文名。
  */
@@ -841,8 +940,14 @@ function weaponLabel(info) {
   if (!info) return '';
   const custom = textMap.weaponNames && textMap.weaponNames[info.name];
   if (custom) return custom;
+  const name = String(info.name || '');
+  // 匕首全家桶（weapon_knife* / *bayonet*）共用一个自定义名：text.weaponNames._knife
+  if (/^weapon_knife/.test(name) || /bayonet/.test(name)) {
+    const k = textMap.weaponNames && textMap.weaponNames._knife;
+    if (k) return k;
+  }
   if (info.label) return info.label;
-  return String(info.name || '').replace(/^weapon_/, '');
+  return name.replace(/^weapon_/, '');
 }
 
 /** 投掷物单字：用户改了字就用用户的，没配就用默认 */
@@ -1172,6 +1277,19 @@ function applyModules(cfg) {
     if (wb.textColor) nodes.weaponBar.style.setProperty('--wtext-color', wb.textColor);
     if (wb.dimColor) nodes.weaponBar.style.setProperty('--wtext-dim', wb.dimColor);
   }
+
+  // ---- 武器栏 SVG 态：位置 + 颜色 + 辉光 ----
+  const wls = wb.svg || {};
+  const wlsN = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+  root.setProperty('--m-weaponListSvg-x', `${wlsN(wls.offsetX, 0)}px`);
+  root.setProperty('--m-weaponListSvg-y', `${wlsN(wls.offsetY, 0)}px`);
+  root.setProperty('--m-weaponListSvg-sx', String(wlsN(wls.scaleX, 1)));
+  root.setProperty('--m-weaponListSvg-sy', String(wlsN(wls.scaleY, 1)));
+  root.setProperty('--m-weaponListSvg-rot', `${wlsN(wls.rotate, 0)}deg`);
+  root.setProperty('--wl-svg-color', wls.color || '#3b82f6');
+  root.setProperty('--wl-svg-active', wls.activeColor || '#FFFFFF');
+  root.setProperty('--wl-svg-glow', `${wlsN(wls.glow, 0)}px`);
+  root.setProperty('--wl-svg-glow-color', wls.glowColor || '#3b82f6');
 
   // 名单面板：底栏浓度走 barAlpha，其余是各类文字的颜色
   const rp = M.roster || {};

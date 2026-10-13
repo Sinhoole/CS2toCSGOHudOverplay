@@ -11,4 +11,7 @@ contextBridge.exposeInMainWorld('overplayhud', {
   // 只用来「重播 / 跳到某个阶段」模拟时间线，不含任何游戏输入。
   previewCmd: (cmd, arg) => ipcRenderer.send('preview:cmd', String(cmd), arg),
   onPreviewReset: (cb) => ipcRenderer.on('hud:preview-reset', () => cb()),
+
+  /** 武器/刀/投掷物 SVG 图标 map（文件名 → 归一化 SVG 字符串） */
+  equipIcons: () => ipcRenderer.invoke('hud:equip-icons'),
 });

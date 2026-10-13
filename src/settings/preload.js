@@ -69,6 +69,9 @@ contextBridge.exposeInMainWorld('oph', {
 
   /** 关于页：版本号 / 作者博客等（版本现取，界面不写死） */
   appInfo: () => ipcRenderer.invoke('settings:app-info'),
+
+  /** 武器/刀/投掷物 SVG 图标 map（文件名 → 归一化 SVG 字符串） */
+  equipIcons: () => ipcRenderer.invoke('settings:equip-icons'),
   /** 用系统默认浏览器打开外部链接（主进程只放行 http / https） */
   openExternal: (url) => ipcRenderer.invoke('settings:open-external', String(url)),
 

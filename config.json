@@ -363,7 +363,7 @@
     "factionMark": true
   },
   "show": {
-    "scoreBar": true,
+    "scoreBar": false,
     "timer": true,
     "health": true,
     "armor": true,

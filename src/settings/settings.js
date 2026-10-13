@@ -27,7 +27,7 @@ const MODULES = [
   { key: 'money',      ico: 'money',  name: '金钱',        hint: '左侧信息组，排在血量护甲上方' },
   { key: 'vitals',     ico: 'vitals', name: '血量 / 护甲',  hint: '左下角，含血量槽与护甲槽' },
   { key: 'ammo',       ico: 'ammo',   name: '弹药 / 连杀',  hint: '右下角，连杀骷髅 + 弹匣/备弹 + 子弹' },
-  { key: 'weaponList', ico: 'weapon', name: '武器栏',       hint: '右侧 1–5 号槽位，纯文字方案' },
+  { key: 'weaponList', ico: 'weapon', name: '武器栏（文字态）', hint: '右侧 1–5 号槽位，纯文字方案' },
   { key: 'roster',     ico: 'roster', name: '名单面板',     hint: '队友 / 对手的血量、武器、KDA —— 只有死亡观战时才有数据' },
 ];
 
@@ -38,27 +38,7 @@ const SECTIONS = [
   // 命令目录来自主进程 src/gamecmds.js（唯一权威）。
   { id: 'gamecmds', ico: 'gamecmds', name: '原生 HUD 命令', build: buildGamecmdsSection },
 
-  {
-    id: 'scoreboard',
-    ico: 'ct',
-    name: '顶部比分面板',
-    module: 'scoreboard',
-    colors: [
-      { label: 'CT 色块',   path: 'modules.scoreboard.ctColor' },
-      { label: 'T 色块',    path: 'modules.scoreboard.tColor' },
-      { label: '中间色块',  path: 'modules.scoreboard.centerColor' },
-    ],
-    fields: [
-      { type: 'switch', label: '显示比分面板', path: 'show.scoreBar' },
-      { type: 'switch', label: '显示计时器',   path: 'show.timer' },
-      { type: 'switch', label: '阵营底纹',     path: 'hud.factionMark' },
-      { type: 'select', label: '阵营块内容',   path: 'hud.aliveCountMode',
-        options: [['label', '显示 CT / T'], ['auto', '显示存活人数（需观察视角）']],
-        note: 'GSI 只对 GOTV / 观察者视角提供全场数据，普通玩家视角拿不到存活人数，'
-            + '所以默认直接写 CT / T。选「显示存活人数」时，只有在能拿到数据的情况下才会显示数字。' },
-    ],
-  },
-
+  // 「顶部比分面板」设置页已于 10-13 应用户要求下线（HUD 渲染与 config 键保留）。
   {
     id: 'money',
     ico: 'money',
@@ -118,9 +98,9 @@ const SECTIONS = [
   },
 
   {
-    id: 'weaponList',
+    id: 'weaponListText',
     ico: 'weapon',
-    name: '武器栏',
+    name: '武器栏文字态',
     module: 'weaponList',
     colors: [
       { label: '手持文字色', path: 'modules.weaponList.textColor' },
@@ -132,50 +112,17 @@ const SECTIONS = [
         note: '默认关闭。开启后会在武器名和编号外描一圈深色边，方便压在明亮背景上读。' },
     ],
   },
-
   {
-    id: 'roster',
-    ico: 'roster',
-    name: '名单面板',
-    module: 'roster',
-    colors: [
-      { label: '底栏颜色',   path: 'modules.roster.barColor' },
-      { label: '我方名字',   path: 'modules.roster.textColor' },
-      { label: '对手名字',   path: 'modules.roster.dimColor', withAlpha: true },
-      { label: '存活标记',   path: 'modules.roster.aliveColor' },
-      { label: '阵亡标记',   path: 'modules.roster.deadColor' },
-      { label: '自己那行',   path: 'modules.roster.selfColor' },
-      { label: '武器文字',   path: 'modules.roster.accentColor' },
-    ],
-    alphas: [
-      { label: '羽化底栏不透明度', path: 'modules.roster.barAlpha' },
-    ],
-    fields: [
-      { type: 'switch', label: '显示名单面板', path: 'show.roster',
-        note: '⚠️ 名单数据来自 GSI 的 allplayers，Valve 官方把它限定为「仅观察者有效」——'
-            + '你还活着的时候游戏不会下发队友的血量、武器、位置，所以这块面板会自动隐藏。'
-            + '死亡进入观战后才会出现，那时正好是你会想知道队友还剩几个的时候。'
-            + '（这是游戏规则，不是本程序的限制；要存活时也看到队友，只有读内存那条路，而那条路 VAC 不允许。）' },
-      { type: 'select', label: '显示范围', path: 'roster.scope',
-        options: [['team', '只看我方'], ['enemy', '只看敌方'], ['all', '双方分两组']] },
-      { type: 'select', label: '排序方式', path: 'roster.sortBy',
-        options: [['score', '按个人得分'], ['kills', '按击杀数'], ['alive', '活着的排前面'], ['slot', '按游戏内顺位']] },
-      { type: 'num',    label: '每组最多几行', path: 'roster.rowsPerTeam', min: 1, max: 10, step: 1, integer: true },
-      { type: 'switch', label: '显示血量',   path: 'roster.showHealth' },
-      { type: 'switch', label: '显示护甲',   path: 'roster.showArmor' },
-      { type: 'switch', label: '显示武器',   path: 'roster.showWeapon' },
-      { type: 'switch', label: '显示 K-D-A', path: 'roster.showKda' },
-      { type: 'switch', label: '显示金钱',   path: 'roster.showMoney' },
-      { type: 'switch', label: '显示自己',   path: 'roster.showSelf' },
-      { type: 'switch', label: '只列活着的人', path: 'roster.hideDead',
-        note: '观战时想快速看清还剩几个人，把这个打开，阵亡的直接不占位置。' },
-    ],
+    id: 'weaponListSvg',
+    ico: 'weapon',
+    name: '武器栏SVG态',
+    build: buildWeaponListSvgCard,
   },
 
+  // 「名单面板」设置页已于 10-13 应用户要求下线（HUD 渲染与 config 键保留）。
   { id: 'text',   ico: 'text',   name: '文字替换',   build: buildTextSection },
   { id: 'custom', ico: 'custom', name: '自定义元素', build: buildCustomSection },
-  { id: 'events', ico: 'events', name: '击杀播报',   build: buildEventsSection },
-  { id: 'buywheel', ico: 'buywheel', name: '购买轮盘', build: buildBuywheelSection },
+  // 「击杀播报」「购买轮盘」设置页已于 10-13 应用户要求下线（代码与 config 键保留）。
 
   {
     id: 'global',
@@ -202,24 +149,16 @@ const SECTIONS = [
     ],
   },
 
-  // ---- 进阶配置 ----
-  // 现有全部分区 = 「基础配置」；下面这几页 = 「进阶配置」层。
-  // 完整设计见项目根目录 ADVANCED-CONFIG-PLAN.md。
-  { id: 'advanced',  ico: 'advanced', name: '进阶 · 全局默认', group: 'advanced', build: buildAdvancedSection },
-  { id: 'adv-elements', ico: 'advEl',  name: '进阶 · 每元素',   group: 'advanced', build: buildAdvElementsSection },
-  { id: 'adv-icons',    ico: 'advIcon', name: '进阶 · 图标库',   group: 'advanced', build: buildAdvIconsSection },
-  { id: 'adv-draw',     ico: 'advDraw', name: '进阶 · 画图',     group: 'advanced', build: buildAdvDrawSection },
-
+  // 「进阶配置」四页（adv / adv-elements / adv-icons / adv-draw）已于 10-13 应用户要求下线：
+  // 侧栏不再出现，build 函数与 config.adv 逻辑保留（可随时恢复）。
   { id: 'profiles', ico: 'profiles', name: '配置方案', group: 'tools', build: buildProfilesSection },
-  { id: 'tutorial', ico: 'tutorial', name: '教程',     group: 'tools', build: buildTutorialSection },
-  { id: 'about',    ico: 'about',    name: '关于',     group: 'tools', build: buildAboutSection },
+  // 「教程」「关于」页已于 10-13 下线：文档 TUTORIAL.md 与渲染/IPC 代码保留。
 ];
 
 // 侧边导航分组
 const NAV_GROUPS = [
   { id: 'home',     label: '总览' },
   { id: 'basic',    label: '基础配置' },
-  { id: 'advanced', label: '进阶配置' },
   { id: 'tools',    label: '工具与帮助' },
 ];
 // 没写 group 的分区一律归入基础配置（新增分区不用再手动标注）
@@ -894,7 +833,7 @@ function buildWeaponNamesCard() {
     inp.addEventListener('input', sync);
     clr.addEventListener('click', () => { inp.value = ''; sync(); });
 
-    row.append(el('div', 'wkey', key), cur, inp, clr);
+    row.append(el('div', 'wkey', key === '_knife' ? '匕首（所有刀具）' : key), cur, inp, clr);
     list.append(row);
     rows.push({ row, key, def });
   }
@@ -2667,12 +2606,8 @@ function buildHomeSection(sec) {
   const sum = el('div', 'stat-grid');
   wrap.append(sum);
   const sumVal = {};
-  sumVal.events = statBox(sum, 'events', '击杀播报');
-  sumVal.adv = statBox(sum, 'adv', '进阶外观');
-  sumVal.shapes = statBox(sum, 'shapes', '画图元素');
+  // 10-13：击杀播报 / 进阶外观 / 画图 / 图标库 / 购买轮盘 已下线，概览格一并移除
   sumVal.custom = statBox(sum, 'custom', '自定义文本');
-  sumVal.icons = statBox(sum, 'icons', '图标库');
-  sumVal.buywheel = statBox(sum, 'buywheel', '购买轮盘');
   sumVal.gamecmds = statBox(sum, 'gamecmds', '游戏命令');
 
   // ---------------- 继续 ----------------
@@ -2681,9 +2616,7 @@ function buildHomeSection(sec) {
   const go = (id, title, desc) => qcard(more, title, desc, () => activate(id));
   go('gamecmds', '原生 HUD 命令', '关原生 HUD、把雷达与队友标识留住');
   go('profiles', '配置方案', '保存 / 切换多套配置');
-  go('tutorial', '教程', '从装 GSI 到玩进阶外观');
-  go('adv-elements', '进阶 · 每元素', '给单个元素单独配图标与样式');
-  go('adv-draw', '进阶 · 画图', '画一块贴到 HUD 上的图形');
+  // 「教程」「进阶 · 每元素」「进阶 · 画图」入口已随对应设置页一同下线（10-13）
   wrap.append(more);
 
   // ---------------- 绘制 ----------------
@@ -2724,13 +2657,7 @@ function buildHomeSection(sec) {
     setStat(infoVal, 'scale', String(s.scale));
     setStat(infoVal, 'display', s.mock ? '—' : '#' + (Number(s.displayIndex) + 1));
 
-    setStat(sumVal, 'events', s.events ? ('开 · ' + ((s.eventsOn || []).join(' / ') || '无')) : '关',
-      s.events ? 'ok' : 'dim');
-    setStat(sumVal, 'adv', s.adv ? '开' : '关', s.adv ? 'ok' : 'dim');
-    setStat(sumVal, 'shapes', String(s.shapes));
     setStat(sumVal, 'custom', String(s.custom));
-    setStat(sumVal, 'icons', String(s.icons));
-    setStat(sumVal, 'buywheel', s.buywheel ? '开' : '关', s.buywheel ? 'ok' : 'dim');
     setStat(sumVal, 'gamecmds',
       (s.gamecmds == null ? '—' : (s.gamecmds + ' / ' + (s.gamecmdsAll || 0) + ' 条')),
       s.gamecmds && s.gamecmds === s.gamecmdsAll ? 'ok' : 'dim');
@@ -3333,6 +3260,95 @@ function buildTutorialSection(sec) {
 // 分区构建
 // ============================================================
 
+// ---- 武器栏 SVG 态：纯色剪影图标方案，与文字态各自独立开关、可并存 ----
+function buildWeaponListSvgCard() {
+  const wrap = el('div', 'section');
+  wrap.dataset.section = 'weaponListSvg';
+
+  const title = el('div', 'card');
+  const th = el('div', 'card-head');
+  th.append(el('div', 'card-title', '武器栏 SVG 态'));
+  th.append(el('div', 'card-hint', '用纯色剪影图标显示 1–5 号武器，可与「武器栏文字态」并存显示'));
+  title.append(th);
+  wrap.append(title);
+
+  // ---- 开关 ----
+  const onCard = el('div', 'card');
+  const onHead = el('div', 'card-head'); onHead.append(el('div', 'card-title', '显示')); onCard.append(onHead);
+  const onBody = el('div', 'card-body');
+  {
+    const f = { type: 'switch', label: '启用 SVG 图标武器栏', path: 'modules.weaponList.svgMode' };
+    const field = el('div', 'field');
+    const row = el('div', 'row');
+    row.append(switchControl(f), el('span', 'switch-label', f.label));
+    field.append(row);
+    onBody.append(field);
+  }
+  onCard.append(onBody);
+  wrap.append(onCard);
+
+  const files = Array.isArray(state.equipIconFiles) ? state.equipIconFiles : [];
+  const fileOptions = [['', '自动（按武器名）'], ...files.map((f) => [f, f])];
+  // 刀型文件：从图标清单里挑出刀具相关的文件名
+  const knifeFiles = files.filter((f) => /knife|bayonet|melee|kukri/i.test(f));
+
+  const base = 'modules.weaponList.svg';
+
+  // ---- 位置与大小 ----
+  const posCard = el('div', 'card');
+  const posHead = el('div', 'card-head'); posHead.append(el('div', 'card-title', '位置与大小')); posCard.append(posHead);
+  const posBody = el('div', 'card-body');
+  const posFields = [
+    { type: 'num', label: '位移 X', path: base + '.offsetX', min: -2000, max: 2000, step: 1, unit: 'px' },
+    { type: 'num', label: '位移 Y', path: base + '.offsetY', min: -2000, max: 2000, step: 1, unit: 'px' },
+    { type: 'num', label: '缩放 X', path: base + '.scaleX', min: 0.3, max: 3, step: 0.01 },
+    { type: 'num', label: '缩放 Y', path: base + '.scaleY', min: 0.3, max: 3, step: 0.01 },
+    { type: 'num', label: '旋转', path: base + '.rotate', min: -180, max: 180, step: 1, unit: '°' },
+    { type: 'num', label: '不透明度', path: base + '.opacity', min: 0, max: 1, step: 0.01 },
+  ];
+  for (const f of posFields) posBody.append(fieldRow(f.label, numControl(f)));
+  posCard.append(posBody);
+  wrap.append(posCard);
+
+  // ---- 颜色与辉光 ----
+  const styleCard = el('div', 'card');
+  const styleHead = el('div', 'card-head'); styleHead.append(el('div', 'card-title', '颜色与辉光')); styleCard.append(styleHead);
+  const styleBody = el('div', 'card-body');
+  styleBody.append(fieldRow('剪影颜色', colorControl({ type: 'color', label: '剪影颜色', path: base + '.color', fallback: '#3b82f6' })));
+  styleBody.append(fieldRow('选中剪影颜色', colorControl({ type: 'color', label: '选中剪影颜色', path: base + '.activeColor', fallback: '#FFFFFF' })));
+  styleBody.append(fieldRow('选中辉光半径', numControl({ type: 'num', label: '辉光半径', path: base + '.glow', min: 0, max: 40, step: 1, unit: 'px' })));
+  styleBody.append(fieldRow('辉光颜色', colorControl({ type: 'color', label: '辉光颜色', path: base + '.glowColor', fallback: '#3b82f6' })));
+  styleBody.append(fieldRow('开局显示毫秒（预留）', numControl({ type: 'num', label: 'idleHideMs', path: base + '.idleHideMs', min: 0, max: 10000, step: 100, unit: 'ms' })));
+  styleCard.append(styleBody);
+  wrap.append(styleCard);
+
+  // ---- 槽位图标覆盖 ----
+  const slotCard = el('div', 'card');
+  const slotHead = el('div', 'card-head'); slotHead.append(el('div', 'card-title', '槽位图标覆盖（留空 = 自动）')); slotCard.append(slotHead);
+  const slotBody = el('div', 'card-body');
+  for (let i = 1; i <= 5; i++) {
+    const f = { type: 'select', label: `${i} 号槽位`, path: `${base}.icons.${i}`, options: fileOptions };
+    slotBody.append(fieldRow(f.label, selectControl(f)));
+  }
+  slotCard.append(slotBody);
+  wrap.append(slotCard);
+
+  // ---- 刀型对照表 ----
+  const knifeCard = el('div', 'card');
+  const knifeHead = el('div', 'card-head'); knifeHead.append(el('div', 'card-title', '刀型对照表（每种刀选一个剪影）')); knifeCard.append(knifeHead);
+  const knifeBody = el('div', 'card-body');
+  const knifeOptions = [['', '用同名刀形（默认）'], ...knifeFiles.map((f) => [f, f.replace(/\.svg$/, '')])];
+  for (const kf of knifeFiles) {
+    const internal = 'weapon_' + kf.replace(/\.svg$/, '');
+    const f = { type: 'select', label: internal, path: `${base}.knives.${internal}`, options: knifeOptions };
+    knifeBody.append(fieldRow(internal, selectControl(f)));
+  }
+  knifeCard.append(knifeBody);
+  wrap.append(knifeCard);
+
+  return wrap;
+}
+
 function buildSection(sec) {
   if (typeof sec.build === 'function') return sec.build(sec);
   const wrap = el('div', 'section');
@@ -3570,6 +3586,12 @@ async function doReset() {
   state.weaponNames = vd.weaponNames || {};
   state.grenadeKinds = vd.grenadeKinds || [];
   state.buyCatalog = vd.buyCatalog || { categories: [], weapons: [] };
+
+  // 武器 / 刀 / 投掷物 SVG 图标清单（供「武器栏SVG态」页下拉选择）
+  try {
+    state.equipIcons = (await window.oph.equipIcons()) || {};
+    state.equipIconFiles = Object.keys(state.equipIcons);
+  } catch (e) { state.equipIcons = {}; state.equipIconFiles = []; }
 
   normalizeCustom();
 
