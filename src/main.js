@@ -1323,8 +1323,8 @@ function installCfgFromTray() {
   if (r.reason === 'no_source') {
     dialog.showMessageBox({
       type: 'error',
-      title: '装不了',
-      message: '程序里没找到 GSI 配置文件',
+      title: '无法安装',
+      message: '程序内未找到 GSI 配置文件',
       detail: `期望的位置：${r.src}`,
     });
     return;
@@ -1332,10 +1332,10 @@ function installCfgFromTray() {
   if (r.reason === 'no_cs2') {
     dialog.showMessageBox({
       type: 'error',
-      title: '没找到 CS2',
+      title: '未检测到 CS2',
       message: '自动探测不到 Counter-Strike 2 的安装目录',
-      detail: '如果你是自定义路径装的 Steam，可能探测不到。\n'
-        + '可以手动把程序目录里 cfg\\' + CFG_NAME + ' 复制到：\n'
+      detail: '自定义路径安装的 Steam 可能无法自动探测。\n'
+        + '可手动将程序目录中的 cfg\\' + CFG_NAME + ' 复制到：\n'
         + '<CS2>\\game\\csgo\\cfg\\ 和 <CS2>\\game\\core\\cfg\\',
     });
     return;
@@ -1344,8 +1344,8 @@ function installCfgFromTray() {
   const lines = r.copied.map((p) => '✅ ' + p).concat(r.failed.map((f) => '❌ ' + f));
   let detail = lines.join('\n');
   if (r.running) {
-    detail += '\n\n⚠️ CS2 现在正在运行。GSI 配置必须在游戏启动前就位，'
-      + '请完全退出 CS2 再重新打开（重连服务器没用）。';
+    detail += '\n\n⚠️ CS2 正在运行。GSI 配置需在游戏启动前就位，'
+      + '请完全退出 CS2 后重新启动（重连服务器无效）。';
   }
 
   dialog.showMessageBox({
@@ -1353,7 +1353,7 @@ function installCfgFromTray() {
     title: r.copied.length ? 'GSI 配置已装好' : '安装失败',
     message: r.copied.length
       ? `已写入 ${r.copied.length} 处，完全重启 CS2 后生效`
-      : '一处都没装上',
+      : '未能写入任何位置',
     detail,
   });
 }

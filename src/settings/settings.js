@@ -24,9 +24,9 @@ const state = {
 
 const MODULES = [
   { key: 'scoreboard', ico: 'ct',     name: '顶部比分面板', hint: '屏幕顶部居中：CT 块 / 时间+比分 / T 块' },
-  { key: 'money',      ico: 'money',  name: '金钱',        hint: '左侧信息组，排在血量护甲上方' },
+  { key: 'money',      ico: 'money',  name: '金钱',        hint: '左侧信息组，位于血量护甲上方' },
   { key: 'vitals',     ico: 'vitals', name: '血量 / 护甲',  hint: '左下角，含血量槽与护甲槽' },
-  { key: 'ammo',       ico: 'ammo',   name: '弹药 / 连杀',  hint: '右下角，连杀骷髅 + 弹匣/备弹 + 子弹' },
+  { key: 'ammo',       ico: 'ammo',   name: '弹药 / 连杀',  hint: '右下角，含连杀、弹匣/备弹与子弹' },
   { key: 'weaponList', ico: 'weapon', name: '武器栏（文字态）', hint: '右侧 1–5 号槽位，纯文字方案' },
   { key: 'roster',     ico: 'roster', name: '名单面板',     hint: '队友 / 对手的血量、武器、KDA —— 只有死亡观战时才有数据' },
 ];
@@ -78,9 +78,9 @@ const SECTIONS = [
       { type: 'switch', label: '显示护甲',   path: 'show.armor' },
       { type: 'switch', label: '显示拆弹器', path: 'show.defuseKit' },
       { type: 'num',    label: '血条转红',   path: 'hud.healthRedThreshold', min: 1, max: 100, step: 1,
-        note: '血量低于等于此值时，血色进度条的填充由白转红。' },
+        note: '血量低于或等于该值时，血条填充由白转红。' },
       { type: 'num',    label: '低血预警',   path: 'hud.lowHealthThreshold', min: 1, max: 100, step: 1,
-        note: '血量低于等于此值时触发红色发光 + 底栏左侧红渐变，血量越低发光越强。' },
+        note: '血量低于或等于该值时触发红色发光与底栏左侧红渐变，血量越低发光越强。' },
     ],
   },
 
@@ -113,7 +113,7 @@ const SECTIONS = [
     fields: [
       { type: 'switch', label: '显示武器栏',   path: 'show.weaponList' },
       { type: 'switch', label: '文字描边',     path: 'show.weaponTextOutline',
-        note: '默认关闭。开启后会在武器名和编号外描一圈深色边，方便压在明亮背景上读。' },
+        note: '在武器名与编号外描一圈深色边，便于在明亮背景上辨识。' },
     ],
   },
   {
@@ -135,21 +135,21 @@ const SECTIONS = [
     build: buildGlobalSection,
     fields: [
       { type: 'num',    label: '整体缩放', path: 'scale', min: 0.5, max: 2, step: 0.01,
-        note: '在设计分辨率之上再乘一个倍率，影响全部模块。单块微调用各模块自己的缩放。' },
+        note: '在设计分辨率之上再乘一个倍率，影响全部模块；单模块微调请用各模块自身的缩放。' },
       { type: 'num',    label: '安全区 X', path: 'safezone.x', min: 0.7, max: 1, step: 0.005,
-        note: '与 CS2 的 safezonex 保持一致，否则 HUD 会和游戏原生元素错位。' },
+        note: '需与 CS2 的 safezonex 保持一致，否则 HUD 会与游戏原生元素错位。' },
       { type: 'num',    label: '安全区 Y', path: 'safezone.y', min: 0.7, max: 1, step: 0.005 },
       { type: 'num',    label: '羽化底栏浓度', path: 'hud.barAlpha', min: 0, max: 1, step: 0.01,
-        note: '全局默认的底栏不透明度。设 0 等于关掉所有半透明底条（各模块自己的设置优先）。' },
+        note: '全局默认的底栏不透明度；设为 0 即关闭全部半透明底条，各模块自身设置优先。' },
       { type: 'num',    label: '失效延迟', path: 'staleTimeoutMs', min: 3000, max: 120000, step: 1000, unit: 'ms',
-        note: '超过这么久没收到数据就认为不在对局里、把 HUD 收起来。'
-            + '必须大于 cfg 里 heartbeat 的两倍，否则站着不动时 GSI 不发包会被误判成退出了。' },
+        note: '超过该时长未收到数据即视为不在对局中，并隐藏 HUD。'
+            + '必须大于 cfg 中 heartbeat 的两倍，否则静止时 GSI 不发包会被误判为已退出。' },
       { type: 'switch', label: '鼠标可交互', path: 'enableInteraction',
-        note: '调试用。开启后鼠标能点到 HUD，但会挡住游戏操作，正常玩请关闭。' },
+        note: '调试用途。开启后鼠标可点击 HUD，但会阻挡游戏操作，正常游玩时请关闭。' },
       { type: 'switch', label: '启动时打开设置', path: 'openSettingsOnStart',
-        note: '默认开。关掉之后，程序启动只留一个托盘图标（右下角），点它才打开设置。' },
+        note: '关闭后程序启动仅保留托盘图标，点击图标才打开设置。' },
       { type: 'num',    label: '显示器序号', path: 'displayIndex', min: 0, max: 3, step: 1, integer: true,
-        note: '多屏用户：0 = 主显示器。改完保存，覆盖层会挪到对应屏幕。' },
+        note: '0 表示主显示器。保存后覆盖层将移动到对应屏幕。' },
     ],
   },
 
@@ -183,8 +183,8 @@ function buildGlobalSection(sec) {
   const wrap = el('div', 'section');
   wrap.dataset.section = sec.id;
   wrap.append(sectionHead('全局',
-    '字体、缩放、安全区等整体参数。分辨率决定 HUD 的「虚拟屏幕」大小，'
-    + '适配模式决定这个虚拟屏幕怎么映射到你的真实显示器。'));
+    '字体、缩放、安全区等整体参数。分辨率决定 HUD 虚拟屏幕的尺寸，'
+    + '适配模式决定该虚拟屏幕如何映射到显示器。'));
 
   wrap.append(buildResolutionCard());
   wrap.append(buildFontCard());
@@ -203,8 +203,7 @@ function buildFontCard() {
   const fonts = Array.isArray(A.FONTS) ? A.FONTS : [];
 
   const { card, body } = newCard('HUD 字体',
-    '改的是 HUD 上全部文字的字型。这些全是系统自带字体，不联网下载 —— '
-    + '覆盖层盖在游戏画面上，不能为了显示一行字去等字体。');
+    '设置 HUD 上全部文字的字型。均为系统自带字体，不联网下载。');
 
   // ---- 预览 ----
   const preview = el('div', 'font-preview');
@@ -230,7 +229,7 @@ function buildFontCard() {
       btn.classList.toggle('on', !custom && btn.dataset.id === f.preset);
     }
     hint.textContent = custom
-      ? '当前用的是自定义字体栈（下面的输入框非空，会盖过上面的选择）'
+      ? '当前使用自定义字体栈（下方输入框非空，优先生效）'
       : '当前生效：' + ((fonts.find((x) => x.id === f.preset) || {}).label || '默认');
     hint.classList.toggle('warn', !!custom);
   };
@@ -272,7 +271,7 @@ function buildFontCard() {
   });
   row.append(box);
   body.append(fieldRow('自定义字体栈', row,
-    '留空就用上面选的那套。填了就以你为准（老的 font.family 配置也走这里，不会丢）。'));
+    '留空则使用上方所选预设，填写后以自定义为准。'));
 
   refresh();
   return card;
@@ -281,7 +280,7 @@ function buildFontCard() {
 /** 分辨率 + 适配模式卡片 */
 function buildResolutionCard() {
   const card = newCard('分辨率与适配',
-    '分辨率 = HUD 的虚拟屏幕基准。想还原 CS:GO 的 4:3 拉伸，选 1280×960 再把适配模式设为「拉伸铺满」。');
+    '分辨率即 HUD 虚拟屏幕基准。还原 CS:GO 的 4:3 拉伸效果，可选用 1280×960 并将适配模式设为「拉伸铺满」。');
 
   // 当前是否命中某个预设
   const curW = Number(getPath(state.cfg, 'designWidth')) || 1920;
@@ -308,10 +307,10 @@ function buildResolutionCard() {
 
   card.body.append(fieldRow('设计宽度', numControl({
     path: 'designWidth', min: 320, max: 7680, step: 1, integer: true, unit: 'px',
-  }), 'HUD 内部排版用的虚拟屏宽。改成 1280 就是按 1280 宽来布局。'));
+  }), 'HUD 内部排版使用的虚拟屏宽度。'));
   card.body.append(fieldRow('设计高度', numControl({
     path: 'designHeight', min: 240, max: 4320, step: 1, integer: true, unit: 'px',
-  }), '虚拟屏高。1280×960 是标准的 4:3 比例。'));
+  }), 'HUD 内部排版使用的虚拟屏高度；1280×960 为标准 4:3 比例。'));
 
   card.body.append(fieldRow('适配模式', selectControl({
     path: 'fit',
@@ -320,11 +319,11 @@ function buildResolutionCard() {
       ['stretch', '等比填满（等比放大，溢出裁掉）'],
       ['contain', '完整显示（等比缩小，不裁切）'],
     ],
-  }), '想要 CS:GO 那种 4:3 拉宽的怀旧感，就用「拉伸铺满」。'));
+  }), '还原 CS:GO 的 4:3 拉伸效果请选「拉伸铺满」。'));
 
   card.body.append(fieldRow('整体缩放', numControl({
     path: 'scale', min: 0.5, max: 2, step: 0.01,
-  }), '在适配结果之上再乘一个倍率。想整体放大一点就往上调。'));
+  }), '在适配结果之上再乘一个倍率。'));
 
   return card.card;
 }
@@ -750,10 +749,10 @@ function freeText(getVal, setVal, opts) {
 function buildTextSection(sec) {
   const wrap = el('div', 'section');
   wrap.dataset.section = sec.id;
-  wrap.append(sectionHead('文字替换', '改的是「显示出来的字」。留空 = 用内置默认值，逻辑完全不受影响'));
+  wrap.append(sectionHead('文字替换', '修改界面上显示的文字。留空则使用内置默认值，不影响判定逻辑。'));
 
   // ---- 投掷物单字 ----
-  const g = newCard('投掷物单字', '顺位固定为 火 → 烟 → 雷 → 闪 → 诱，改字不会改变顺位');
+  const g = newCard('投掷物单字', '顺位固定为 火 → 烟 → 雷 → 闪 → 诱，修改文字不改变顺位。');
   for (const k of state.grenadeKinds) {
     g.body.append(fieldRow(k.label, freeText(
       () => getPath(state.cfg, `text.grenadeChars.${k.id}`) ?? k.char,
@@ -769,7 +768,7 @@ function buildTextSection(sec) {
   wrap.append(g.card);
 
   // ---- 比分面板标签 ----
-  const l = newCard('比分面板标签', '顶部面板显示的文字');
+  const l = newCard('比分面板标签', '顶部比分面板显示的文字。');
   const labelFields = [
     ['存活', 'alive', '存活'],
     ['CT 阵营', 'ct', 'CT'],
@@ -791,12 +790,12 @@ function buildTextSection(sec) {
 }
 
 function buildWeaponNamesCard() {
-  const { card, body } = newCard('武器名称', '左边是 GSI 的内部名，中间是当前名字，右边填你想显示的字');
+  const { card, body } = newCard('武器名称', '左列为 GSI 内部名，中列为当前名称，右列填写自定义显示名。');
 
   const srow = el('div', 'search-row');
   const search = el('input', 'txt');
   search.type = 'text';
-  search.placeholder = '搜索武器（内部名或显示名都行）…';
+  search.placeholder = '搜索武器（内部名或显示名）…';
   const resetAll = el('button', 'mini', '全部恢复默认');
   resetAll.addEventListener('click', () => {
     setPath(state.cfg, 'text.weaponNames', {});
@@ -979,12 +978,12 @@ function buildCustomSection(sec) {
   const wrap = el('div', 'section');
   wrap.dataset.section = sec.id;
   wrap.append(sectionHead('自定义元素',
-    '自己加任意数量的文本框，内容用 {变量} 插值。位移 / 缩放和其它模块一样，位移不受缩放影响'));
+    '可添加任意数量的文本元素，内容支持 {变量} 插值。位移与缩放规则同其它模块，位移不受缩放影响。'));
 
   ensureCustomArray();
 
   // ---- 变量速查：点一下插到正在编辑的文本框里，没有就复制 ----
-  const vc = newCard('可用变量', '点一下插入到正在编辑的文本框；没有在编辑就复制到剪贴板');
+  const vc = newCard('可用变量', '点击插入到正在编辑的文本框；未在编辑时复制到剪贴板。');
   const vars = el('div', 'vars');
   let lastGroup = null;
   for (const v of state.vars) {
@@ -1024,14 +1023,14 @@ function buildCustomSection(sec) {
     rebuild();
     markDirty();
     schedulePreview();
-    toast('已添加，往下滚到最底部即可编辑', 'ok');
+    toast('已添加，可在页面底部编辑', 'ok');
   });
   addRow.append(addBtn);
   wrap.append(addRow);
 
   // ---- 常用示例：一键添加 ----
   const tplCard = newCard('常用示例',
-    '点一下直接加进来，模板 / 位置 / 字号都配好了，加完再按自己的习惯改。');
+    '点击即可添加，模板、位置与字号已预设，添加后可自行调整。');
   const tplGrid = el('div', 'tpl-grid');
   for (const t of CUSTOM_PRESETS) {
     const b = el('button', 'tpl-chip');
@@ -1043,7 +1042,7 @@ function buildCustomSection(sec) {
       rebuild();
       markDirty();
       schedulePreview();
-      toast('已添加「' + t.name + '」，往下滚到最底部编辑', 'ok');
+      toast('已添加「' + t.name + '」，可在页面底部编辑', 'ok');
     });
     tplGrid.append(b);
   }
@@ -1052,7 +1051,7 @@ function buildCustomSection(sec) {
 
   if (!state.cfg.custom.length) {
     wrap.append(el('div', 'empty-hint',
-      '还没有自定义文本元素。\n点上面的按钮加一个，模板可以写成 {weapon}  {clip} / {reserve} 这种。'));
+      '暂无自定义文本元素。\n点击上方按钮添加，模板示例：{weapon}  {clip} / {reserve}。'));
   }
 
   state.cfg.custom.forEach((item, i) => wrap.append(customItemCard(item, i)));
@@ -2494,7 +2493,7 @@ async function pushStatusNow() {
 function buildHomeSection(sec) {
   const wrap = el('div', 'section');
   wrap.dataset.section = sec.id;
-  wrap.append(sectionHead('总览', '一眼看清当前在跑什么、游戏连上没有，以及最常用的几个操作'));
+  wrap.append(sectionHead('总览'));
 
   // ---------------- 状态带 ----------------
   const band = el('div', 'hs-band');
@@ -2547,17 +2546,17 @@ function buildHomeSection(sec) {
       const r = await window.oph.gsiInfo();
       if (!r.ok) { gsiNote.textContent = '无法检查 GSI 安装状态：' + (r.error || '未知错误'); gsiNote.className = 'home-note warn'; return; }
       if (!r.roots || !r.roots.length) {
-        gsiNote.textContent = '⚠ 没有自动探测到 CS2 —— 需要手动把 cfg 复制到 <CS2>\\game\\csgo\\cfg\\ 与 game\\core\\cfg\\';
+        gsiNote.textContent = '⚠ 未检测到 CS2，需手动将 cfg 复制到 <CS2>\\game\\csgo\\cfg\\ 与 game\\core\\cfg\\';
         gsiNote.className = 'home-note warn';
       } else {
         gsiNote.textContent = `已找到 ${r.roots.length} 处 CS2 配置目录`
-          + (r.running ? '；CS2 正在运行，装完要完全退出游戏再重开才生效。' : '。');
+          + (r.running ? '；CS2 正在运行，需完全退出游戏后重新启动才会生效。' : '。');
         gsiNote.className = 'home-note';
       }
     } catch (e) { gsiNote.textContent = ''; }
   };
 
-  const gsiBtn = qcard(quick, '安装 GSI 配置', '把 Valve 官方 GSI 配置写进 CS2 目录（等同托盘里那一项）', async () => {
+  const gsiBtn = qcard(quick, '安装 GSI 配置', '将 Valve 官方 GSI 配置写入 CS2 目录', async () => {
     gsiBtn.disabled = true;
     let r = null;
     try { r = await window.oph.installCfg(); } catch (e) { r = { ok: false, reason: e.message }; }
@@ -2565,31 +2564,31 @@ function buildHomeSection(sec) {
     if (r && r.ok) {
       toast(`已写入 ${r.copied.length} 处，完全重启 CS2 后生效${r.running ? '（CS2 正在运行，请先退出）' : ''}`, 'ok');
     } else if (r && r.reason === 'no_cs2') {
-      toast('自动探测不到 CS2 安装目录，需要手动复制 cfg', 'err');
+      toast('未检测到 CS2 安装目录，需手动复制 cfg', 'err');
     } else if (r && r.reason === 'no_source') {
-      toast('程序里没找到 GSI 配置文件', 'err');
+      toast('程序内未找到 GSI 配置文件', 'err');
     } else {
       toast('安装失败：' + ((r && r.reason) || '未知原因'), 'err');
     }
     refreshGsi();
   }, true);
 
-  qcard(quick, '原生 HUD 命令', '把「关原生 HUD / 保留雷达与队友标识」那组命令写进 CS2', () => activate('gamecmds'));
+  qcard(quick, '原生 HUD 命令', '将关闭原生 HUD、保留雷达与队友标识的命令写入 CS2', () => activate('gamecmds'));
 
-  qcard(quick, '实时预览', '开一个用模拟数据的窗口，边调边看', async () => {
+  qcard(quick, '实时预览', '打开模拟数据预览窗口', async () => {
     let on = false;
     try { on = await window.oph.togglePreview(); } catch (e) { return; }
     if (applyPreviewBtn) applyPreviewBtn(on);
-    toast(on ? '预览窗口已打开（数据是模拟的）' : '预览窗口已关闭', 'ok');
+    toast(on ? '预览窗口已打开（模拟数据）' : '预览窗口已关闭', 'ok');
     pushStatusNow();
   });
 
-  qcard(quick, '显示 / 隐藏 HUD', '和托盘菜单里那一项一样', async () => {
+  qcard(quick, '显示 / 隐藏 HUD', '切换 HUD 显示状态', async () => {
     const r = await window.oph.toggleHud();
     toast(r && r.visible ? 'HUD 已显示' : 'HUD 已隐藏', 'ok');
   });
 
-  qcard(quick, '重新读取配置', '丢弃未保存的改动，从 config.json 重读一遍', async () => {
+  qcard(quick, '重新读取配置', '放弃未保存的改动并重新读取 config.json', async () => {
     const r = await window.oph.reloadConfig();
     if (r && r.cfg) {
       state.cfg = r.cfg;
@@ -2601,9 +2600,9 @@ function buildHomeSection(sec) {
     toast('已重新读取配置', 'ok');
   });
 
-  qcard(quick, '配置文件位置', '在资源管理器里定位 config.json', () => window.oph.reveal());
-  qcard(quick, '方案目录', '打开本地配置方案的存放文件夹', () => window.oph.profiles.reveal());
-  qcard(quick, '开发者工具', '排查渲染问题时用（挂在 HUD 窗口上）', () => window.oph.openDevTools());
+  qcard(quick, '配置文件位置', '在资源管理器中定位 config.json', () => window.oph.reveal());
+  qcard(quick, '方案目录', '打开配置方案所在文件夹', () => window.oph.profiles.reveal());
+  qcard(quick, '开发者工具', '打开 HUD 窗口的开发者工具', () => window.oph.openDevTools());
 
   wrap.append(gsiNote);
 
@@ -2617,11 +2616,11 @@ function buildHomeSection(sec) {
   sumVal.gamecmds = statBox(sum, 'gamecmds', '游戏命令');
 
   // ---------------- 继续 ----------------
-  wrap.append(el('div', 'home-sub', '继续'));
+  wrap.append(el('div', 'home-sub', '更多'));
   const more = el('div', 'quick-grid');
   const go = (id, title, desc) => qcard(more, title, desc, () => activate(id));
-  go('gamecmds', '原生 HUD 命令', '关原生 HUD、把雷达与队友标识留住');
-  go('profiles', '配置方案', '保存 / 切换多套配置');
+  go('gamecmds', '原生 HUD 命令', '关闭原生 HUD，保留雷达与队友标识');
+  go('profiles', '配置方案', '保存与切换多套配置');
   // 「教程」「进阶 · 每元素」「进阶 · 画图」入口已随对应设置页一同下线（10-13）
   wrap.append(more);
 
@@ -2645,14 +2644,14 @@ function buildHomeSection(sec) {
     band.classList.toggle('ok', live);
     band.classList.toggle('warn', connected && !live);
     band.classList.toggle('off', !connected);
-    hsTitle.textContent = !s.running ? '覆盖层没有在运行'
-      : live ? '正在对局中'
-        : connected ? '已连上，但当前不在对局里'
+    hsTitle.textContent = !s.running ? '覆盖层未运行'
+      : live ? '对局进行中'
+        : connected ? '已连接，当前不在对局中'
           : '等待游戏数据';
-    hsSub.textContent = !s.running ? '检查一下覆盖层进程是否被关掉了'
-      : live ? 'GSI 数据正常，HUD 正在显示'
-        : connected ? 'HUD 会在进入对局时自动出现'
-          : '没开 CS2，或者 GSI 配置还没装到 CS2 目录里';
+    hsSub.textContent = !s.running ? '请确认覆盖层进程是否仍在运行'
+      : live ? 'GSI 数据正常，HUD 显示中'
+        : connected ? '进入对局后将自动显示 HUD'
+          : '未检测到 CS2，或 GSI 配置尚未安装到 CS2 目录';
     hsBadge.textContent = s.mock ? '模拟数据' : '真实 GSI';
     hsBadge.classList.toggle('mock', !!s.mock);
 
@@ -2725,14 +2724,13 @@ function buildGamecmdsSection(sec) {
   wrap.dataset.section = sec.id;
 
   wrap.append(sectionHead('原生 HUD 与游戏命令',
-    '覆盖层要看得清，前提是先把 CS2 的原生 HUD 关掉；但雷达和队友头顶标识 GSI 拿不到，'
-    + '必须把原生那两个单独留住 —— 下面这组命令就是干这个的。勾选完点「写入 CS2」，'
-    + '程序会把命令写成一份独立 cfg 放进 CS2 的 cfg 目录。'
-    + '⚠️ 本页只写文本文件，不模拟按键、不注入进程。'));
+    '关闭 CS2 原生 HUD，同时保留雷达与队友标识（这两项 GSI 无法提供）。'
+    + '勾选后点击「写入 CS2」，程序会将命令写成一份独立 cfg 放入 CS2 的 cfg 目录。'
+    + '⚠️ 本页只写入文本文件，不模拟按键、不注入进程。'));
 
   if (!info || !info.catalog) {
-    const c = newCard('读不到命令目录', '');
-    c.body.append(el('div', 'note err', '主进程没有返回命令目录，可能是设置窗口和主程序版本对不上。'));
+    const c = newCard('无法读取命令目录', '');
+    c.body.append(el('div', 'note err', '主进程未返回命令目录，可能是设置窗口与主程序版本不一致。'));
     wrap.append(c.card);
     return wrap;
   }
@@ -2746,7 +2744,7 @@ function buildGamecmdsSection(sec) {
   const execLine = info.execLine || 'exec overplayhud_gamesetup';
 
   // ---------------- 状态 + 操作 ----------------
-  const sc = newCard('CS2 状态', '每次打开这一页都现查，不是缓存的');
+  const sc = newCard('CS2 状态', '打开本页时实时查询');
 
   const grid = el('div', 'gc-stat');
   const stat = (k, v, cls) => {
@@ -2754,10 +2752,10 @@ function buildGamecmdsSection(sec) {
     b.append(el('div', 'gc-stat-k', k), el('div', 'gc-stat-v' + (cls ? ' ' + cls : ''), v));
     grid.append(b);
   };
-  stat('CS2 安装目录', roots.length ? roots.length + ' 处' : '没探测到', roots.length ? 'ok' : 'warn');
-  stat('命令 cfg', installedDirs ? '已写入 ' + installedDirs + ' 处' : '还没写入', installedDirs ? 'ok' : 'dim');
-  stat('开机自动执行', blockOn ? '已挂在 autoexec' : '未启用', blockOn ? 'ok' : 'dim');
-  stat('游戏进程', info.running == null ? '查不到' : (info.running ? '正在运行' : '没在跑'),
+  stat('CS2 安装目录', roots.length ? roots.length + ' 处' : '未检测到', roots.length ? 'ok' : 'warn');
+  stat('命令 cfg', installedDirs ? '已写入 ' + installedDirs + ' 处' : '未写入', installedDirs ? 'ok' : 'dim');
+  stat('开机自动执行', blockOn ? '已挂载到 autoexec' : '未启用', blockOn ? 'ok' : 'dim');
+  stat('游戏进程', info.running == null ? '未检测到' : (info.running ? '运行中' : '未运行'),
     info.running ? 'warn' : 'dim');
   sc.body.append(grid);
 
@@ -2773,12 +2771,12 @@ function buildGamecmdsSection(sec) {
   const hint = el('div', 'home-note', roots.length
     ? (installedDirs
       ? (blockOn
-        ? '已写入，并且挂在 autoexec 上 —— 每局启动游戏会自动生效，不用管了。'
-        : '已写入。还差最后一步：在 CS2 控制台执行一次 ' + execLine
-          + '（或勾上下面的「开机自动执行」，以后就不用管了）。')
-      : '还没写入 CS2。点「写入 CS2」把上面勾选的 ' + onNow + ' 条命令存成一份独立 cfg。')
-    : '⚠ 没探测到 CS2 安装目录（自定义 Steam 路径可能探测不到）。'
-      + '可以点「在文件夹中显示」看程序期望的位置，手动复制过去。');
+        ? '已写入并挂载到 autoexec，每次启动游戏自动生效。'
+        : '已写入。还需在 CS2 控制台执行一次 ' + execLine
+          + '，或勾选下方的「开机自动执行」。')
+      : '尚未写入 CS2。点击「写入 CS2」可将上方勾选的 ' + onNow + ' 条命令存为一份独立 cfg。')
+    : '⚠ 未检测到 CS2 安装目录（自定义 Steam 路径可能无法探测）。'
+      + '可点击「在文件夹中显示」查看程序预期位置并手动复制。');
   hint.className = roots.length ? 'home-note' : 'home-note warn';
   sc.body.append(hint);
   wrap.append(sc.card);
@@ -2790,22 +2788,22 @@ function buildGamecmdsSection(sec) {
     btnWrite.disabled = false;
     if (r && r.copied && r.copied.length) {
       toast(`已写入 ${r.copied.length} 处`
-        + (r.running ? '（CS2 正在运行，要完全退出游戏再重开才生效）' : ''), 'ok');
+        + (r.running ? '（CS2 正在运行，需完全退出游戏后重新启动才生效）' : ''), 'ok');
       state.dirty = false;
       document.getElementById('dirty').hidden = true;
       setStatus('已保存并写入 CS2', 'ok');
     } else if (r && r.error) {
       toast('写入失败：' + r.error, 'err');
     } else {
-      toast('没找到可写入的 CS2 cfg 目录', 'err');
+      toast('未找到可写入的 CS2 cfg 目录', 'err');
     }
     if (r && r.failed && r.failed.length) console.warn('[gamecmds] 部分失败：', r.failed.join(' | '));
     await refreshGameCmds();
   });
 
   btnRemove.addEventListener('click', async () => {
-    if (!confirm('把程序写进 CS2 的这份命令 cfg 删掉？\n'
-      + '如果挂在 autoexec 上，那一段也会一并摘除（你自己写在 autoexec 里的内容不受影响）。')) return;
+    if (!confirm('确认删除程序写入 CS2 的命令 cfg？\n'
+      + '若已挂载到 autoexec，对应区块将一并移除，autoexec 中其它内容不受影响。')) return;
     btnRemove.disabled = true;
     try { await window.oph.gamecmds.remove(); } catch (e) { /* 忽略 */ }
     btnRemove.disabled = false;
@@ -2865,16 +2863,16 @@ function buildGamecmdsSection(sec) {
   }
 
   // ---------------- 执行方式 ----------------
-  const ax = newCard('执行方式', '命令要生效，总得让 CS2 读到它 —— 两种方式任选');
+  const ax = newCard('执行方式', '两种方式任选其一');
   const axField = el('div', 'field');
   const axRow = el('div', 'row');
   axRow.append(switchControl({ path: 'gamecmds.autoexec' }),
-    el('span', 'switch-label', '开机自动执行（写进 autoexec.cfg）'));
+    el('span', 'switch-label', '开机自动执行（写入 autoexec.cfg）'));
   axField.append(axRow);
   axField.append(el('div', 'note',
-    '勾上之后会在 CS2 的 autoexec.cfg 里维护一段带标记的区块，每次启动游戏自动生效，不用手打 exec。'
-    + '这段区块随时可以「移除已写入」摘掉，你自己写在 autoexec 里的其它内容一个字都不会动。'
-    + '（如果本来没有 autoexec.cfg，程序会建一个。）'));
+    '勾选后会在 autoexec.cfg 中维护一段带标记的区块，启动游戏时自动生效，无需手动执行 exec。'
+    + '该区块可通过「移除已写入」撤销，不会改动 autoexec.cfg 中的其它内容；'
+    + '文件不存在时会自动创建。'));
   ax.body.append(axField);
 
   const manField = el('div', 'field');
@@ -2885,20 +2883,20 @@ function buildGamecmdsSection(sec) {
   manRow.append(execBox, gcCopyBtn(execLine));
   manField.append(manRow);
   manField.append(el('div', 'note',
-    '不想让程序碰 autoexec 的话：每次进游戏后在控制台执行一次这一行就行。'
-    + '服务器如果锁了 cvar，进服后可能被重置，那就只能每局执行一次。'));
+    '每次进入游戏后在控制台执行此行。若服务器锁定相关 cvar，进入服务器后可能被重置，'
+    + '则需每局执行一次。'));
   ax.body.append(manField);
   wrap.append(ax.card);
 
   // ---------------- 将要写进 cfg 的内容 ----------------
   const pv = newCard('将要写进 cfg 的内容',
-    '勾选变了这里就跟着变。cfg 里只写 ASCII 注释 —— Source 引擎的 cfg 解析不保证非 ASCII 编码，'
-    + '中文说明留在这一页。');
+    '内容随上方勾选实时更新。cfg 内仅写入 ASCII 注释（Source 引擎的 cfg 解析不保证支持非 ASCII 编码），'
+    + '中文说明仅在本页显示。');
   pv.body.append(pre);
   pv.body.append(el('div', 'note',
-    '这份文件叫 ' + (info.cfgName || 'overplayhud_gamesetup.cfg')
-    + '，会被放进 CS2 的 game\\csgo\\cfg\\ 与 game\\core\\cfg\\ 两处。'
-    + '它是程序生成的独立文件，删掉不会影响游戏本体。'));
+    '文件名为 ' + (info.cfgName || 'overplayhud_gamesetup.cfg')
+    + '，写入 CS2 的 game\\csgo\\cfg\\ 与 game\\core\\cfg\\ 两处。'
+    + '该文件由程序生成，删除不影响游戏本体。'));
   wrap.append(pv.card);
 
   repaintCfg();
@@ -2913,14 +2911,14 @@ function buildProfilesSection(sec) {
   const wrap = el('div', 'section');
   wrap.dataset.section = sec.id;
   wrap.append(sectionHead('配置方案',
-    '把整套设置存成本地方案，随时切换。方案文件是一份完整的 config.json 快照，'
-    + '放在配置目录下的 profiles 文件夹里。'));
+    '将整套设置保存为本地方案并随时切换。方案为 config.json 的完整快照，'
+    + '存放于配置目录的 profiles 文件夹中。'));
 
   // ---- 保存当前 ----
-  const c1 = newCard('把当前配置存成方案', '会以此刻“已保存”的配置为准；如果还有未保存的改动，先点底部的「保存」。');
+  const c1 = newCard('把当前配置存成方案', '以已保存的配置为准；存在未保存改动时请先点击底部「保存」。');
   const nameInp = el('input', 'txt');
   nameInp.type = 'text';
-  nameInp.placeholder = '方案名，例如「纯净」「花哨」';
+  nameInp.placeholder = '方案名称';
   nameInp.style.flex = '0 0 200px';
   const noteInp = el('input', 'txt');
   noteInp.type = 'text';
@@ -2928,7 +2926,7 @@ function buildProfilesSection(sec) {
   const saveBtn = el('button', 'btn primary', '保存为新方案');
   saveBtn.addEventListener('click', async () => {
     const name = nameInp.value.trim();
-    if (!name) { toast('先填一个方案名', 'err'); return; }
+    if (!name) { toast('请先填写方案名', 'err'); return; }
     const r = await window.oph.profiles.saveAs(name, noteInp.value.trim());
     if (!r.ok) { toast(r.error || '保存失败', 'err'); return; }
     nameInp.value = '';
@@ -2942,7 +2940,7 @@ function buildProfilesSection(sec) {
   wrap.append(c1.card);
 
   // ---- 方案列表 ----
-  const c2 = newCard('已有方案', '「启用」会用该方案覆盖当前配置（config.json 会被改写）。');
+  const c2 = newCard('已有方案', '「启用」将用该方案覆盖当前配置（会重写 config.json）。');
   const listBody = el('div', 'card-body');
   c2.body = listBody;
   c2.card.append(listBody);
@@ -2951,7 +2949,7 @@ function buildProfilesSection(sec) {
   const renderList = (list, active) => {
     listBody.textContent = '';
     if (!list || !list.length) {
-      listBody.append(el('div', 'empty-hint', '还没有任何方案。'));
+      listBody.append(el('div', 'empty-hint', '暂无方案。'));
       return;
     }
     for (const p of list) {
@@ -2971,7 +2969,7 @@ function buildProfilesSection(sec) {
       const acts = el('div', 'prof-acts');
       const useBtn = el('button', 'btn primary', p.active ? '重新应用' : '启用');
       useBtn.addEventListener('click', async () => {
-        if (!confirm('用方案「' + p.name + '」覆盖当前配置？\n\n当前 config.json 会被改写。')) return;
+        if (!confirm('确认用方案「' + p.name + '」覆盖当前配置？\n\n当前 config.json 将被重写。')) return;
         const r = await window.oph.profiles.apply(p.name);
         if (!r.ok) { toast(r.error || '切换失败', 'err'); return; }
         state.cfg = r.cfg;
@@ -2991,7 +2989,7 @@ function buildProfilesSection(sec) {
       });
       const rnBtn = el('button', 'btn', '重命名');
       rnBtn.addEventListener('click', async () => {
-        const nn = prompt('新名字：', p.name);
+        const nn = prompt('新名称：', p.name);
         if (nn == null) return;
         const r = await window.oph.profiles.rename(p.name, nn.trim());
         if (!r.ok) { toast(r.error || '重命名失败', 'err'); return; }
@@ -3291,24 +3289,15 @@ function parseChangelog(html) {
   return { title, meta, node: holder };
 }
 
-function fmtStamp(ts) {
-  const d = new Date(Number(ts) || Date.now());
-  const p = (n) => String(n).padStart(2, '0');
-  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
 function buildUpdateSection(sec) {
   const wrap = el('div', 'section');
   wrap.dataset.section = sec.id;
-  wrap.append(sectionHead('更新公告',
-    '公告取自作者博客的公告页。程序只把这篇网页取回来、自己排版画出来，'
-    + '所以你看到的是一页原生内容，而不是嵌进来的网页。'));
+  wrap.append(sectionHead('更新公告'));
 
   const card = el('div', 'card');
   const head = el('div', 'card-head');
   const box = el('div');
   box.append(el('div', 'card-title', '最新公告'));
-  box.append(el('div', 'card-hint', CHANGELOG_URL));
   const tools = el('div', 'head-tools');
   const bOpen = el('button', 'mini', '在浏览器打开');
   const bCopy = el('button', 'mini', '复制网址');
@@ -3322,13 +3311,6 @@ function buildUpdateSection(sec) {
   body.append(doc);
   card.append(body);
   wrap.append(card);
-
-  const src = newCard('这一页是怎么来的', '');
-  src.body.append(el('div', 'up-note',
-    '程序用只读的方式请求上面那个网址，取回 HTML 后按白名单过滤（脚本、表单、内嵌框架一律丢掉），'
-    + '再按设置界面自己的字体与配色排版。文字和图片都来自那篇公告，内容本身不会被改动。'
-    + '想核对原文，点右上角「在浏览器打开」。'));
-  wrap.append(src.card);
 
   let loaded = false;
   let loading = false;
@@ -3353,9 +3335,8 @@ function buildUpdateSection(sec) {
     if (parsed.title) art.append(el('h1', 'up-title', parsed.title));
     const bits = [];
     if (parsed.meta) bits.push(parsed.meta);
-    if (data.fetchedAt) bits.push('本地取回 ' + fmtStamp(data.fetchedAt));
     if (bits.length) art.append(el('div', 'up-meta', bits.join('  ·  ')));
-    if (data.stale) art.append(el('div', 'up-badge', '这次没连上，下面是上一次取到的内容'));
+    if (data.stale) art.append(el('div', 'up-badge', '当前显示的是上一次获取的内容'));
     art.append(parsed.node);
     doc.append(art);
   };
@@ -3364,7 +3345,7 @@ function buildUpdateSection(sec) {
     if (loading) return;
     loading = true;
     bRefresh.disabled = true;
-    if (!loaded) showState('', '正在取公告…', '');
+    if (!loaded) showState('', '正在获取公告…', '');
     let r = null;
     try {
       r = await window.oph.changelog(!!force);
@@ -3374,9 +3355,8 @@ function buildUpdateSection(sec) {
     loading = false;
     bRefresh.disabled = false;
     if (!r || !r.ok) {
-      showState('err', '没能取到公告',
-        ((r && r.error) || '网络不可用，或者这个地址暂时打不开。')
-        + ' 也可以直接点右上角「在浏览器打开」去看原文。',
+      showState('err', '公告获取失败',
+        (r && r.error) || '请检查网络连接后重试。',
         true);
       return;
     }
@@ -3463,7 +3443,7 @@ function buildWeaponListSvgCard() {
   const title = el('div', 'card');
   const th = el('div', 'card-head');
   th.append(el('div', 'card-title', '武器栏 SVG 态'));
-  th.append(el('div', 'card-hint', '用纯色剪影图标显示 1–5 号武器，可与「武器栏文字态」并存显示'));
+  th.append(el('div', 'card-hint', '以纯色剪影图标显示 1–5 号武器，可与「武器栏文字态」并存。'));
   title.append(th);
   wrap.append(title);
 
@@ -3510,13 +3490,13 @@ function buildWeaponListSvgCard() {
   const styleHead = el('div', 'card-head'); styleHead.append(el('div', 'card-title', '颜色与辉光')); styleCard.append(styleHead);
   const styleBody = el('div', 'card-body');
   styleBody.append(fieldRow('剪影颜色', colorControl({ type: 'color', label: '剪影颜色', path: base + '.color', fallback: '#3b82f6' }),
-    '默认剪影颜色（所有槽位共用）；想单独特化某件武器就在下面逐槽覆盖。'));
+    '默认剪影颜色，所有槽位共用；如需单独设置可在下方逐槽覆盖。'));
   // 每槽位独立剪影颜色（留空 = 回落上面的默认剪影颜色）
   const silFallback = getPath(state.cfg, base + '.color') || '#3b82f6';
   for (let i = 1; i <= 5; i++) {
     styleBody.append(fieldRow(`${i} 号槽位剪影`, colorControl({
       type: 'color', label: `${i} 号槽位剪影`, path: `${base}.colors.${i}`, fallback: silFallback,
-    }), i === 1 ? '留空 = 用上面的默认剪影颜色。只影响未选中时的剪影，选中态仍走「选中剪影颜色」。' : ''));
+    }), i === 1 ? '留空则使用上方默认剪影颜色。仅影响未选中状态，选中状态仍使用「选中剪影颜色」。' : ''));
   }
   styleBody.append(fieldRow('选中剪影颜色', colorControl({ type: 'color', label: '选中剪影颜色', path: base + '.activeColor', fallback: '#FFFFFF' })));
   styleBody.append(fieldRow('选中辉光半径', numControl({ type: 'num', label: '辉光半径', path: base + '.glow', min: 0, max: 40, step: 1, unit: 'px' })));
@@ -3538,7 +3518,7 @@ function buildWeaponListSvgCard() {
   {
     const box = el('div');
     box.append(el('div', 'card-title', '名称与行距'));
-    box.append(el('div', 'card-hint', '每行图标下方可以显示字：选中的那一栏显示武器名（跟着一起亮），其余栏可以填「常显名称」当固定标签用。'));
+    box.append(el('div', 'card-hint', '图标下方可显示名称：选中栏显示武器名，其余栏可填写「常显名称」作为固定标签。'));
     nameHead.append(box);
   }
   nameCard.append(nameHead);
@@ -3546,7 +3526,7 @@ function buildWeaponListSvgCard() {
 
   nameBody.append(fieldRow('行间距', numControl({ type: 'num', label: '行间距', path: base + '.gap', min: 0, max: 60, step: 1, unit: 'px' })));
   nameBody.append(fieldRow('编号间距', numControl({ type: 'num', label: '编号间距', path: base + '.numGap', min: 0, max: 80, step: 1, unit: 'px' }),
-    '图标右缘到右侧编号（1～5）之间的水平距离，调大编号就往右挪。'));
+    '图标右缘到右侧编号（1～5）的水平距离。'));
   nameBody.append(fieldRow('选中放大倍数', numControl({ type: 'num', label: '选中放大倍数', path: base + '.activeScale', min: 1, max: 1.6, step: 0.01 })));
   {
     const f = { type: 'switch', label: '选中时显示武器名称', path: base + '.showName' };
@@ -3554,37 +3534,36 @@ function buildWeaponListSvgCard() {
     const row = el('div', 'row');
     row.append(switchControl(f), el('span', 'switch-label', f.label));
     field.append(row);
-    field.append(el('div', 'note', '只显示当前手持的那一件：投掷物行只显示手上那颗的名字，其余不显示。'));
+    field.append(el('div', 'note', '仅显示当前手持的那一件；投掷物行只显示手持那一颗的名称。'));
     nameBody.append(field);
   }
-  nameBody.append(fieldRow('名称字号', numControl({ type: 'num', label: '名称字号', path: base + '.nameSize', min: 8, max: 28, step: 1, unit: 'px' }),
-    '名称字比编号小一号看着更干净。'));
+  nameBody.append(fieldRow('名称字号', numControl({ type: 'num', label: '名称字号', path: base + '.nameSize', min: 8, max: 28, step: 1, unit: 'px' })));
   nameBody.append(fieldRow('名称颜色', colorControl({ type: 'color', label: '名称颜色', path: base + '.nameColor', fallback: '#FFFFFF' })));
   nameBody.append(fieldRow('名称位置 X', numControl({ type: 'num', label: '名称位置 X', path: base + '.nameOffsetX', min: -100, max: 100, step: 1, unit: 'px' }),
-    '在默认位置基础上微调（单图标栏=图标下方，投掷物行=手持那颗下方）；负数往左。'));
+    '在默认位置基础上微调；单图标栏默认在图标下方，投掷物行默认在手持那一颗下方。'));
   nameBody.append(fieldRow('名称位置 Y', numControl({ type: 'num', label: '名称位置 Y', path: base + '.nameOffsetY', min: -100, max: 100, step: 1, unit: 'px' }),
-    '负数往上、正数往下。'));
+    '负值向上，正值向下。'));
   {
     const f = { type: 'switch', label: '名称辉光', path: base + '.nameGlow' };
     const field = el('div', 'field');
     const row = el('div', 'row');
     row.append(switchControl(f), el('span', 'switch-label', f.label));
     field.append(row);
-    field.append(el('div', 'note', '只作用于「选中那件武器」的名字；辉光半径复用上面的「选中辉光半径」。'));
+    field.append(el('div', 'note', '仅作用于选中武器的名称；辉光半径复用「选中辉光半径」。'));
     nameBody.append(field);
   }
   nameBody.append(fieldRow('名称辉光颜色', colorControl({ type: 'color', label: '名称辉光颜色', path: base + '.nameGlowColor', fallback: getPath(state.cfg, base + '.glowColor') || '#3b82f6' }),
-    '留空 = 跟随「颜色与辉光」里该槽位的辉光颜色（清空这个取色器即可）。'));
+    '留空则跟随「颜色与辉光」中该槽位的辉光颜色。'));
   for (let i = 1; i <= 5; i++) {
     nameBody.append(fieldRow(`${i} 号栏常显名称`, textControl({
       type: 'text', label: `${i} 号栏常显名称`, path: `${base}.slotNames.${i}`, placeholder: '留空 = 不常显',
-    }), i === 1 ? '填了就一直在（该栏空着也保留这一行）；选中该栏时让位给实际武器名。' : ''));
+    }), i === 1 ? '填写后常驻显示（该栏为空时仍保留）；该栏选中时显示实际武器名。' : ''));
   }
   {
     const jump = el('button', 'mini', '去自定义武器名称');
     jump.addEventListener('click', () => activate('text'));
     nameBody.append(fieldRow('武器名称', jump,
-      '选中时显示的是武器名。想改某个武器的名字（含闪光弹 / 诱饵弹等投掷物），在「文字替换 → 武器名称」里按内部名改，文字态与 SVG 态共用同一份。'));
+      '选中时显示武器名。如需修改特定武器名称（含闪光弹、诱饵弹等投掷物），请在「文字替换 → 武器名称」中按内部名修改，文字态与 SVG 态共用。'));
   }
   nameCard.append(nameBody);
   wrap.append(nameCard);
@@ -3749,7 +3728,7 @@ function schedulePreview() {
 function markDirty() {
   state.dirty = true;
   document.getElementById('dirty').hidden = false;
-  setStatus('有未保存的改动');
+  setStatus('存在未保存的改动');
 }
 
 function setStatus(text, cls) {
@@ -3791,7 +3770,7 @@ async function doReload() {
   setStatus('已重新读取');
   rebuild();
   window.oph.preview(state.cfg);
-  toast('已放弃改动，重新读取配置');
+  toast('已放弃改动并重新读取配置');
 }
 
 async function doExport() {
@@ -3808,7 +3787,7 @@ async function doCopy() {
 }
 
 async function doImport() {
-  if (state.dirty && !confirm('当前有未保存的改动，导入会直接覆盖掉。\n\n继续导入？')) return;
+  if (state.dirty && !confirm('当前存在未保存的改动，导入将直接覆盖。\n\n继续导入？')) return;
 
   const r = await window.oph.importCfg();
   if (r.canceled) return;
@@ -3830,7 +3809,7 @@ async function doImport() {
 }
 
 async function doReset() {
-  if (!confirm('把所有设置恢复成出厂默认？\n当前 config.json 会被覆盖。')) return;
+  if (!confirm('确认将所有设置恢复为出厂默认？\n当前 config.json 将被覆盖。')) return;
   const saved = await window.oph.reset();
   state.cfg = saved;
   state.dirty = false;
@@ -3896,8 +3875,8 @@ async function doReset() {
     btnPreview.classList.toggle('on', !!on);
     btnPreview.textContent = on ? '预览中' : '预览';
     btnPreview.title = on
-      ? '预览窗口已打开（模拟数据）。再点一下关掉。'
-      : '开一个预览窗口，用模拟数据实时看效果';
+      ? '预览窗口已打开（模拟数据），再次点击关闭。'
+      : '打开模拟数据预览窗口';
   };
   if (btnPreview) {
     btnPreview.addEventListener('click', async () => {
@@ -3907,7 +3886,7 @@ async function doReset() {
       if (on) {
         // 把「当前正在编辑、还没保存」的配置也推过去，预览立刻就是眼前这套参数
         window.oph.preview(state.cfg);
-        toast('预览窗口已打开：数据是模拟的，改设置会实时反映过去', 'ok');
+        toast('预览窗口已打开（模拟数据），修改设置将实时生效', 'ok');
       }
     });
   }
@@ -3923,7 +3902,7 @@ async function doReset() {
 
   document.getElementById('btnMin').addEventListener('click', () => window.oph.minimize());
   document.getElementById('btnClose').addEventListener('click', () => {
-    if (state.dirty && !confirm('有未保存的改动。\n关闭后会丢弃这些改动、并让 HUD 恢复成配置文件里的样子。\n\n确定关闭？')) return;
+    if (state.dirty && !confirm('存在未保存的改动。\n关闭后将丢弃这些改动，HUD 恢复为配置文件中的状态。\n\n确定关闭？')) return;
     window.oph.close();
   });
 

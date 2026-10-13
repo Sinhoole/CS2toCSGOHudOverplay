@@ -1547,5 +1547,3 @@ textarea.tpl:focus { outline: none; border-color: var(--accent); box-shadow: ins
 .up-article table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 13px; }
 .up-article th, .up-article td { border: 1px solid var(--ink); padding: 6px 9px; text-align: left; }
 .up-article th { background: var(--panel-2); font-family: var(--font-ui); font-weight: 700; }
-
-.up-note { font-size: 12px; line-height: 1.7; color: var(--n600); }

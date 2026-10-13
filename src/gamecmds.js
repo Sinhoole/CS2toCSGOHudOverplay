@@ -35,11 +35,11 @@ const MARK_END = '// <<<<< OverplayHUD game setup <<<<<';
 /** 界面上的分组（顺序即显示顺序）。label 给界面看，en 写进 cfg（ASCII）。 */
 const GROUPS = [
   { id: 'base', label: '基础', en: 'Base - hide the native HUD',
-    hint: '关掉原生 HUD，覆盖层才看得清' },
+    hint: '关闭原生 HUD，避免与覆盖层重叠。' },
   { id: 'keep', label: '必须保留的原生元素', en: 'Native elements we must keep',
-    hint: 'GSI 拿不到这些数据，覆盖层复刻不了，只能留原生' },
+    hint: 'GSI 无法提供这些数据，需保留原生显示。' },
   { id: 'extra', label: '开关与观感', en: 'Toggles and looks',
-    hint: '可选，按自己习惯来' },
+    hint: '可选，按需启用。' },
 ];
 
 /**
@@ -54,8 +54,8 @@ const CATALOG = [
     cmd: 'cl_draw_only_deathnotices 1',
     label: '关闭 CS2 原生 HUD',
     en: 'Hide the native HUD (crosshair + kill feed only)',
-    note: '只留准星 + 击杀提示，连顶部的队伍比分栏一起关掉。'
-      + '这是覆盖层能被看清的前提 —— 不关它，两套 HUD 会叠在一起。',
+    note: '仅保留准星与击杀提示，同时关闭顶部队伍比分栏；'
+      + '否则原生 HUD 会与覆盖层重叠。',
   },
   {
     id: 'radar',
@@ -64,8 +64,8 @@ const CATALOG = [
     cmd: 'cl_drawhud_force_radar 1',
     label: '雷达强制显示',
     en: 'Keep the native radar even with the HUD off',
-    note: 'HUD 全关之后照样画雷达。GSI 对本地玩家不提供位置数据，'
-      + '覆盖层根本复刻不了雷达，所以必须把这个留在原生。',
+    note: '关闭 HUD 后仍绘制雷达。GSI 不提供本地玩家的位置数据，'
+      + '覆盖层无法复刻雷达，因此必须保留原生显示。',
   },
   {
     id: 'teamid_overhead',
@@ -74,8 +74,8 @@ const CATALOG = [
     cmd: 'cl_drawhud_force_teamid_overhead 1',
     label: '队友头顶标识',
     en: 'Force teammate overhead names / ids',
-    note: '强制保留队友头顶的名字 / 编号。同样是 GSI 给不了的数据'
-      + '（allplayers 被 Valve 限定为「仅观察者有效」）。',
+    note: '保留队友头顶的名字与编号。该数据 GSI 同样无法提供'
+      + '（allplayers 仅对观察者有效）。',
   },
   {
     id: 'alt_hud',
@@ -84,8 +84,8 @@ const CATALOG = [
     cmd: 'bind alt toggle cl_drawhud_force_deathnotices 1 0',
     label: 'Alt 开关：显示原生 HUD',
     en: 'Press Alt to toggle the native HUD back on',
-    note: '按一下 Alt 就切一次：强制显示原生 HUD ↔ 回到默认（关着的状态）。'
-      + '想临时看一眼原生界面、或者队内需要看击杀提示时按它，再按一下收回去。',
+    note: '按 Alt 在「强制显示原生 HUD」与默认（关闭）状态之间切换，'
+      + '便于临时查看原生界面或击杀提示。',
   },
   {
     id: 'tracers',
@@ -94,7 +94,7 @@ const CATALOG = [
     cmd: 'r_drawtracers_firstperson false',
     label: '关闭第一人称曳光弹',
     en: 'No first-person tracers',
-    note: '只影响你自己视角里子弹的曳光效果，纯观感偏好，和 HUD 无关。',
+    note: '仅影响自身视角的子弹曳光效果，与 HUD 无关。',
   },
 ];
 
