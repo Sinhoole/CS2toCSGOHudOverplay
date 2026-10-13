@@ -1126,6 +1126,80 @@ console.log('\n[14] 原生 HUD / 游戏命令（写进 CS2 的配套 cfg）');
   check('导航图标有 update 配色', setCss.includes('.nav-ico.update'));
   check('截图钩子支持 --shot-settings-wait（联网页要多等一会）',
     mainJs.includes('--shot-settings-wait='));
+
+  // 页面只留正文，不再有刷新 / 打开原网址这类按钮
+  const upBody = (setJs.match(/function buildUpdateSection\(sec\) \{[\s\S]*?\n\}\n/) || [''])[0];
+  check('公告页不再有「刷新 / 在浏览器打开 / 复制网址」按钮',
+    upBody.length > 0
+    && !upBody.includes("'刷新'") && !upBody.includes("'在浏览器打开'") && !upBody.includes("'复制网址'")
+    && !upBody.includes('bRefresh') && !upBody.includes('bOpen'),
+    `仍含 ${['刷新', '在浏览器打开', '复制网址'].filter((t) => upBody.includes(`'${t}'`)).join(' ')}`);
+  check('公告页有版本状态条（三态样式）',
+    setJs.includes("'up-ver'") && setCss.includes('.up-ver.outdated')
+    && setCss.includes('.up-ver.latest') && setCss.includes('.up-ver.ahead'));
+  check('.up-ver[hidden] 压过自身 display（否则藏不住）',
+    /\.up-ver\[hidden\] \{ display: none/.test(setCss));
+  check('设置页加载了 version.js',
+    /<script src="\.\.\/version\.js">/.test(setHtml));
+}
+
+// ============================================================
+console.log('\n[20] 版本比较（src/version.js）');
+{
+  const V = require('../src/version.js');
+
+  check('只认 V 前缀的版本号（资源版本 1.7.11 不算）',
+    V.extract('a 1.7.11 b V2.1.0 c 1.6').length === 1
+    && V.extract('a 1.7.11 b V2.1.0 c 1.6')[0].text === 'V2.1.0');
+
+  check('多个版本里取最大（V2.1.0 < V2.10.0 < V2.10.1）',
+    (V.maxVersion('V2.1.0 ... V2.10.0 ... V2.10.1') || {}).text === 'V2.10.1');
+
+  check('段数不齐按 0 补：V2.2 与 V2.2.0 相等',
+    V.cmp(V.parse('V2.2'), V.parse('V2.2.0')) === 0);
+
+  check('10 > 9（不是字符串比较）',
+    V.cmp(V.parse('V2.10.0'), V.parse('V2.9.0')) === 1);
+
+  const c1 = V.check('2.1.0', '本次更新 V2.2.0');
+  check('本地 2.1.0 / 公告 V2.2.0 → 存在可更新内容（outdated）',
+    c1.status === 'outdated' && c1.label === '存在可更新内容', `实际 ${c1.status}/${c1.label}`);
+
+  const c2 = V.check('2.2.0', '本次更新 V2.2.0');
+  check('本地 2.2.0 / 公告 V2.2.0 → 已更新至最新版本（latest）',
+    c2.status === 'latest' && c2.label === '已更新至最新版本', `实际 ${c2.status}/${c2.label}`);
+
+  const c3 = V.check('2.3.0', '本次更新 V2.2.0');
+  check('本地 2.3.0 / 公告 V2.2.0 → 已更新至预览版本（ahead）',
+    c3.status === 'ahead' && c3.label === '已更新至预览版本', `实际 ${c3.status}/${c3.label}`);
+
+  check('公告里没有版本号 → unknown（不显示状态条）',
+    V.check('2.1.0', '本次只是一些文字调整').status === 'unknown');
+
+  check('本地版本号缺失 → unknown',
+    V.check('', '本次更新 V2.2.0').status === 'unknown');
+
+  check('忽略大小写（v2.2.0 也算）',
+    V.maxVersion('见 v2.2.0 说明').text === 'V2.2.0');
+
+  check('同版本重复出现只留一次',
+    V.extract('V2.2.0 V2.2.0 v2.2.0').length === 1);
+
+  check('badge 文案齐全',
+    V.LABEL.outdated === '存在可更新内容' && V.LABEL.latest === '已更新至最新版本'
+    && V.LABEL.ahead === '已更新至预览版本');
+
+  // 本地上一次抓下来的公告页样本（.shots 里可能没有，没有就跳过）
+  try {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const p = path.join(import.meta.dirname, '..', '.shots', 'changelog.html');
+    const text = fs.readFileSync(p, 'utf8').replace(/<[^>]*>/g, ' ');
+    check('真实公告页样本能取出 V2.1.0', (V.maxVersion(text) || {}).text === 'V2.1.0',
+      `实际 ${(V.maxVersion(text) || {}).text}`);
+  } catch (e) {
+    console.log('  · 跳过真实公告页样本（.shots/changelog.html 不存在）');
+  }
 }
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败\n`);

@@ -3298,24 +3298,35 @@ function buildUpdateSection(sec) {
   const head = el('div', 'card-head');
   const box = el('div');
   box.append(el('div', 'card-title', '最新公告'));
-  const tools = el('div', 'head-tools');
-  const bOpen = el('button', 'mini', '在浏览器打开');
-  const bCopy = el('button', 'mini', '复制网址');
-  const bRefresh = el('button', 'mini', '刷新');
-  tools.append(bOpen, bCopy, bRefresh);
-  head.append(box, tools);
+  head.append(box);
   card.append(head);
 
   const body = el('div', 'card-body');
+  const verBox = el('div', 'up-ver');
+  verBox.hidden = true;
   const doc = el('div', 'up-doc');
-  body.append(doc);
+  body.append(verBox, doc);
   card.append(body);
   wrap.append(card);
 
   let loaded = false;
   let loading = false;
 
+  // 本地版本只在第一次用到时取一次（appInfo 是本地 IPC，很便宜但仍不重复调）
+  let localVer = null;
+  async function getLocalVersion() {
+    if (localVer !== null) return localVer;
+    try {
+      const i = await window.oph.appInfo();
+      localVer = (i && i.ok && i.version) || '';
+    } catch (e) {
+      localVer = '';
+    }
+    return localVer;
+  }
+
   const showState = (cls, title, detail, retry) => {
+    verBox.hidden = true;          // 没内容就没版本状态
     doc.innerHTML = '';
     const st = el('div', 'up-state' + (cls ? ' ' + cls : ''));
     st.append(el('div', 'up-state-t', title));
@@ -3328,9 +3339,20 @@ function buildUpdateSection(sec) {
     doc.append(st);
   };
 
-  const paint = (data) => {
+  // 版本状态条：本地版本 vs 公告里最大的那个版本
+  const paintVer = (vres) => {
+    if (!vres || vres.status === 'unknown') { verBox.hidden = true; return; }
+    verBox.hidden = false;
+    verBox.className = 'up-ver ' + vres.status;
+    verBox.textContent = '';
+    verBox.append(el('div', 'up-ver-t', vres.label));
+    verBox.append(el('div', 'up-ver-d',
+      '本地 v' + String(vres.local.text).replace(/^V/, '') + '  ·  公告 ' + vres.latest.text));
+  };
+
+  const paint = (data, localVersion) => {
     const parsed = parseChangelog(data.html);
-    doc.innerHTML = '';
+    doc.textContent = '';
     const art = el('div', 'up-article');
     if (parsed.title) art.append(el('h1', 'up-title', parsed.title));
     const bits = [];
@@ -3339,12 +3361,17 @@ function buildUpdateSection(sec) {
     if (data.stale) art.append(el('div', 'up-badge', '当前显示的是上一次获取的内容'));
     art.append(parsed.node);
     doc.append(art);
+
+    // 只扫正文的文本内容（textContent 不含标签属性），
+    // 免得把资源 / 样式里的版本号当成程序版本。
+    const V = globalThis.OphVersion;
+    if (V) paintVer(V.check(localVersion, art.textContent));
+    else verBox.hidden = true;
   };
 
   async function load(force) {
     if (loading) return;
     loading = true;
-    bRefresh.disabled = true;
     if (!loaded) showState('', '正在获取公告…', '');
     let r = null;
     try {
@@ -3353,7 +3380,6 @@ function buildUpdateSection(sec) {
       r = { ok: false, error: (e && e.message) || String(e) };
     }
     loading = false;
-    bRefresh.disabled = false;
     if (!r || !r.ok) {
       showState('err', '公告获取失败',
         (r && r.error) || '请检查网络连接后重试。',
@@ -3361,12 +3387,8 @@ function buildUpdateSection(sec) {
       return;
     }
     loaded = true;
-    paint(r);
+    paint(r, await getLocalVersion());
   }
-
-  bRefresh.addEventListener('click', () => load(true));
-  bOpen.addEventListener('click', () => window.oph.openExternal(CHANGELOG_URL));
-  bCopy.addEventListener('click', () => { window.oph.copyText(CHANGELOG_URL); toast('网址已复制', 'ok'); });
 
   // 正文里的链接一律丢给系统浏览器 —— 绝不能让设置窗口自己跳走（跳走就回不来了）
   doc.addEventListener('click', (e) => {

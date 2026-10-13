@@ -1470,6 +1470,22 @@ textarea.tpl:focus { outline: none; border-color: var(--accent); box-shadow: ins
 
 .up-doc { min-height: 110px; }
 
+/* ---- 版本状态条：本地版本 vs 公告里最大的版本 ---- */
+.up-ver {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  margin-bottom: 16px; padding: 9px 12px;
+  border: 1px solid var(--ink); border-left-width: 4px;
+  background: var(--panel-2);
+}
+.up-ver[hidden] { display: none; }   /* .up-ver 自己设了 display，必须压过 hidden */
+.up-ver-t { font-family: var(--font-serif); font-size: 14px; font-weight: 700; color: var(--ink); }
+.up-ver-d { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; color: var(--n500); }
+.up-ver.outdated { border-color: var(--accent); background: #FBEDED; }
+.up-ver.outdated .up-ver-t { color: var(--accent); }
+.up-ver.latest { border-color: var(--ink); }
+.up-ver.ahead { border-color: var(--warn); background: #FBF3E2; }
+.up-ver.ahead .up-ver-t { color: #6B4600; }
+
 /* ---- 取数据中 / 取不到 ---- */
 .up-state {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
