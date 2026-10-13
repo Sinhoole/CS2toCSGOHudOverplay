@@ -3316,7 +3316,15 @@ function buildWeaponListSvgCard() {
   const styleCard = el('div', 'card');
   const styleHead = el('div', 'card-head'); styleHead.append(el('div', 'card-title', '颜色与辉光')); styleCard.append(styleHead);
   const styleBody = el('div', 'card-body');
-  styleBody.append(fieldRow('剪影颜色', colorControl({ type: 'color', label: '剪影颜色', path: base + '.color', fallback: '#3b82f6' })));
+  styleBody.append(fieldRow('剪影颜色', colorControl({ type: 'color', label: '剪影颜色', path: base + '.color', fallback: '#3b82f6' }),
+    '默认剪影颜色（所有槽位共用）；想单独特化某件武器就在下面逐槽覆盖。'));
+  // 每槽位独立剪影颜色（留空 = 回落上面的默认剪影颜色）
+  const silFallback = getPath(state.cfg, base + '.color') || '#3b82f6';
+  for (let i = 1; i <= 5; i++) {
+    styleBody.append(fieldRow(`${i} 号槽位剪影`, colorControl({
+      type: 'color', label: `${i} 号槽位剪影`, path: `${base}.colors.${i}`, fallback: silFallback,
+    }), i === 1 ? '留空 = 用上面的默认剪影颜色。只影响未选中时的剪影，选中态仍走「选中剪影颜色」。' : ''));
+  }
   styleBody.append(fieldRow('选中剪影颜色', colorControl({ type: 'color', label: '选中剪影颜色', path: base + '.activeColor', fallback: '#FFFFFF' })));
   styleBody.append(fieldRow('选中辉光半径', numControl({ type: 'num', label: '辉光半径', path: base + '.glow', min: 0, max: 40, step: 1, unit: 'px' })));
   styleBody.append(fieldRow('辉光颜色', colorControl({ type: 'color', label: '辉光颜色', path: base + '.glowColor', fallback: '#3b82f6' })));
@@ -3359,6 +3367,21 @@ function buildWeaponListSvgCard() {
   nameBody.append(fieldRow('名称字号', numControl({ type: 'num', label: '名称字号', path: base + '.nameSize', min: 8, max: 28, step: 1, unit: 'px' }),
     '名称字比编号小一号看着更干净。'));
   nameBody.append(fieldRow('名称颜色', colorControl({ type: 'color', label: '名称颜色', path: base + '.nameColor', fallback: '#FFFFFF' })));
+  nameBody.append(fieldRow('名称位置 X', numControl({ type: 'num', label: '名称位置 X', path: base + '.nameOffsetX', min: -100, max: 100, step: 1, unit: 'px' }),
+    '在默认位置基础上微调（单图标栏=图标下方，投掷物行=手持那颗下方）；负数往左。'));
+  nameBody.append(fieldRow('名称位置 Y', numControl({ type: 'num', label: '名称位置 Y', path: base + '.nameOffsetY', min: -100, max: 100, step: 1, unit: 'px' }),
+    '负数往上、正数往下。'));
+  {
+    const f = { type: 'switch', label: '名称辉光', path: base + '.nameGlow' };
+    const field = el('div', 'field');
+    const row = el('div', 'row');
+    row.append(switchControl(f), el('span', 'switch-label', f.label));
+    field.append(row);
+    field.append(el('div', 'note', '只作用于「选中那件武器」的名字；辉光半径复用上面的「选中辉光半径」。'));
+    nameBody.append(field);
+  }
+  nameBody.append(fieldRow('名称辉光颜色', colorControl({ type: 'color', label: '名称辉光颜色', path: base + '.nameGlowColor', fallback: getPath(state.cfg, base + '.glowColor') || '#3b82f6' }),
+    '留空 = 跟随「颜色与辉光」里该槽位的辉光颜色（清空这个取色器即可）。'));
   for (let i = 1; i <= 5; i++) {
     nameBody.append(fieldRow(`${i} 号栏常显名称`, textControl({
       type: 'text', label: `${i} 号栏常显名称`, path: `${base}.slotNames.${i}`, placeholder: '留空 = 不常显',

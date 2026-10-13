@@ -910,6 +910,14 @@ function renderWeaponBarSvg(s) {
       else el.style.removeProperty('--wl-svg-glow-color');
     }
 
+    // 每槽位独立剪影颜色：设了就用它，留空则回落全局 --wl-svg-color
+    const sc = (svg.colors && svg.colors[i + 1]) || '';
+    if (el.dataset.silColor !== sc) {
+      el.dataset.silColor = sc;
+      if (sc) el.style.setProperty('--wl-svg-color', sc);
+      else el.style.removeProperty('--wl-svg-color');
+    }
+
     const info = list[i];
     const isGrenade = info && info.slot === 4;
     const empty = !info || (isGrenade ? (info.chars || []).length === 0 : !info.name);
@@ -1345,6 +1353,13 @@ function applyModules(cfg) {
   root.setProperty('--wl-svg-active-scale', String(wlsN(wls.activeScale, 1.18)));
   root.setProperty('--wl-svg-name-size', `${wlsN(wls.nameSize, 13)}px`);
   root.setProperty('--wl-svg-name-color', wls.nameColor || '#FFFFFF');
+  root.setProperty('--wl-svg-name-dx', `${wlsN(wls.nameOffsetX, 0)}px`);
+  root.setProperty('--wl-svg-name-dy', `${wlsN(wls.nameOffsetY, 0)}px`);
+  // 名称辉光开关：关了就把半径压成 0（阴影看不见）
+  root.setProperty('--wl-svg-name-glow', wls.nameGlow ? `${wlsN(wls.glow, 0)}px` : '0px');
+  // 名称辉光颜色留空 = 跟随该槽位的辉光颜色（CSS 里做 var 回退，别写成默认色）
+  if (wls.nameGlowColor) root.setProperty('--wl-svg-name-glow-color', wls.nameGlowColor);
+  else root.removeProperty('--wl-svg-name-glow-color');
 
   // 名单面板：底栏浓度走 barAlpha，其余是各类文字的颜色
   const rp = M.roster || {};

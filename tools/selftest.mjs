@@ -888,6 +888,37 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     hudJs.includes("'--wl-svg-num-gap'"));
   check('设置页有「编号间距」调节项',
     setJs.includes("path: base + '.numGap'"));
+
+  // ---- 名称自定义（位置 / 颜色 / 是否辉光 / 辉光颜色）----
+  check('DEFAULTS 含名称位置 nameOffsetX/Y',
+    DEF.modules.weaponList.svg.nameOffsetX === 0 && DEF.modules.weaponList.svg.nameOffsetY === 0);
+  check('DEFAULTS 含名称辉光开关与颜色（颜色留空=跟随槽位辉光色）',
+    DEF.modules.weaponList.svg.nameGlow === true
+    && DEF.modules.weaponList.svg.nameGlowColor === '');
+  check('名称位置走 CSS 变量（.wl-name 与 .nname 都消费）',
+    /\.weapon-bar-svg \.wl-name \{[^}]*transform: translate\(var\(--wl-svg-name-dx, 0px\), var\(--wl-svg-name-dy, 0px\)\)/.test(hudCss)
+    && /\.weapon-bar-svg \.grenades \.nname \{[^}]*transform: translate\(var\(--wl-svg-name-dx, 0px\), var\(--wl-svg-name-dy, 0px\)\)/.test(hudCss));
+  check('名称辉光走自己的开关/颜色（留空回退到槽位辉光色）',
+    /\.weapon-bar-svg \.wl-name\.on\.act \{[^}]*var\(--wl-svg-name-glow, 0px\) var\(--wl-svg-name-glow-color, var\(--wl-svg-glow-color, #3b82f6\)\)/.test(hudCss)
+    && /\.weapon-bar-svg \.grenades \.nname\.on\.act \{[^}]*var\(--wl-svg-name-glow, 0px\) var\(--wl-svg-name-glow-color, var\(--wl-svg-glow-color, #3b82f6\)\)/.test(hudCss)
+    && hudJs.includes("'--wl-svg-name-glow'") && hudJs.includes("'--wl-svg-name-glow-color'"));
+  check('名称辉光关闭时半径压成 0；颜色留空时移除变量（触发 CSS 回退）',
+    hudJs.includes('wls.nameGlow ?') && hudJs.includes(": '0px'")
+    && hudJs.includes("root.removeProperty('--wl-svg-name-glow-color')"));
+  check('applyModules 写出名称位置变量',
+    hudJs.includes("'--wl-svg-name-dx'") && hudJs.includes("'--wl-svg-name-dy'"));
+  check('设置页有名称位置/辉光/辉光颜色',
+    setJs.includes("path: base + '.nameOffsetX'") && setJs.includes("path: base + '.nameOffsetY'")
+    && setJs.includes("path: base + '.nameGlow'") && setJs.includes("path: base + '.nameGlowColor'"));
+
+  // ---- 剪影颜色（默认 + 每槽位独立）----
+  check('DEFAULTS 含每槽位剪影颜色 colors(1..5)',
+    !!DEF.modules.weaponList.svg.colors && DEF.modules.weaponList.svg.colors['5'] === '');
+  check('HUD 渲染层消费每槽位剪影颜色',
+    hudJs.includes('svg.colors') && hudJs.includes("el.dataset.silColor"));
+  check('设置页有默认剪影颜色 + 每槽位剪影颜色',
+    setJs.includes("path: base + '.color'") && setJs.includes('.colors.'));
+
   check('选中放大倍数走 CSS 变量',
     /--wl-svg-active-scale/.test(hudCss));
   check('名称元素 .wl-name 有独立样式（可显隐/两态配色）',
