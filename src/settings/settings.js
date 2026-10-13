@@ -456,7 +456,9 @@ function numControl(f) {
 /** 色板 + 十六进制输入（带透明度时多一条 alpha 滑杆） */
 function colorControl(f) {
   const wrap = el('div', 'color-wrap');
-  const cur = parseColor(getPath(state.cfg, f.path) ?? f.fallback);
+  // 空串也当作「未设置」→ 显示 fallback（否则取色器会显示成黑色，看着像坏了）
+  const raw = getPath(state.cfg, f.path);
+  const cur = parseColor((raw === '' || raw == null) && f.fallback != null ? f.fallback : raw);
 
   const swatch = el('label', 'swatch');
   const picker = el('input');
@@ -3318,6 +3320,13 @@ function buildWeaponListSvgCard() {
   styleBody.append(fieldRow('选中剪影颜色', colorControl({ type: 'color', label: '选中剪影颜色', path: base + '.activeColor', fallback: '#FFFFFF' })));
   styleBody.append(fieldRow('选中辉光半径', numControl({ type: 'num', label: '辉光半径', path: base + '.glow', min: 0, max: 40, step: 1, unit: 'px' })));
   styleBody.append(fieldRow('辉光颜色', colorControl({ type: 'color', label: '辉光颜色', path: base + '.glowColor', fallback: '#3b82f6' })));
+  // 每槽位独立辉光颜色（留空 = 回落上面的全局辉光颜色）
+  const glowFallback = getPath(state.cfg, base + '.glowColor') || '#3b82f6';
+  for (let i = 1; i <= 5; i++) {
+    styleBody.append(fieldRow(`${i} 号槽位辉光`, colorControl({
+      type: 'color', label: `${i} 号槽位辉光`, path: `${base}.glowColors.${i}`, fallback: glowFallback,
+    })));
+  }
   styleBody.append(fieldRow('开局显示毫秒（预留）', numControl({ type: 'num', label: 'idleHideMs', path: base + '.idleHideMs', min: 0, max: 10000, step: 100, unit: 'ms' })));
   styleCard.append(styleBody);
   wrap.append(styleCard);

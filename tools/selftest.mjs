@@ -826,6 +826,23 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   check('HUD 按 svgMode 切换 SVG 栏显隐', hudJs.includes('wl.svgMode === true'));
   check('applyModules 写出 SVG 栏位置/辉光变量', hudJs.includes('--m-weaponListSvg-x'));
   check('index.html 含 weaponBarSvg 容器', read('src/renderer/index.html').includes('id="weaponBarSvg"'));
+
+  // ---- 武器栏 SVG 态：编号列对齐 / 1-3 左右镜像 / 每槽位辉光颜色 ----
+  const hudCss = read('src/renderer/hud.css');
+  check('DEFAULTS 含每槽位辉光颜色 glowColors(1..5)',
+    !!DEF.modules.weaponList.svg.glowColors && DEF.modules.weaponList.svg.glowColors['5'] === '');
+  check('右侧编号列对齐：槽位等宽(stretch)',
+    /\.weapon-bar-svg \{[^}]*align-items: stretch/.test(hudCss));
+  check('右侧编号列对齐：编号统一右缘',
+    /\.weapon-bar-svg \.wnum \{[^}]*right: calc\(-26px/.test(hudCss));
+  check('1/2/3 号槽位图标左右镜像',
+    /\.slot\[data-slot="1"\][\s\S]{0,160}--wl-svg-mirror: -1/.test(hudCss));
+  check('镜像与选中放大共用 transform 变量（不会互相覆盖）',
+    hudCss.includes('scaleX(var(--wl-svg-mirror, 1)) scale(1.18)'));
+  check('HUD 渲染层消费每槽位辉光颜色',
+    hudJs.includes('svg.glowColors') && hudJs.includes("setProperty('--wl-svg-glow-color'"));
+  check('设置页有每槽位辉光颜色取色器',
+    setJs.includes('.glowColors.') && setJs.includes('号槽位辉光'));
 }
 
 console.log('\n[14] 原生 HUD / 游戏命令（写进 CS2 的配套 cfg）');

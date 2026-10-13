@@ -889,6 +889,14 @@ function renderWeaponBarSvg(s) {
   const list = s.slots || [];
 
   svgSlotEls.forEach((el, i) => {
+    // 每槽位独立辉光颜色：设了就用它，留空则回落全局 --wl-svg-glow-color
+    const gc = (svg.glowColors && svg.glowColors[i + 1]) || '';
+    if (el.dataset.glowColor !== gc) {
+      el.dataset.glowColor = gc;
+      if (gc) el.style.setProperty('--wl-svg-glow-color', gc);
+      else el.style.removeProperty('--wl-svg-glow-color');
+    }
+
     const info = list[i];
     const isGrenade = info && info.slot === 4;
     const empty = !info || (isGrenade ? (info.chars || []).length === 0 : !info.name);

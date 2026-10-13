@@ -796,7 +796,8 @@ body { user-select: none; cursor: default; }
   bottom: calc(var(--bar-h) + var(--inset-y) + var(--offy, 0px) + calc(16px * var(--scale)));
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;                      /* 各槽位等宽 → 右侧编号对齐成一列 */
+  padding-right: calc(26px * var(--scale));  /* 给右侧编号栏留位 */
   gap: calc(8px * var(--scale));
   transform: translate(var(--m-weaponListSvg-x, 0px), var(--m-weaponListSvg-y, 0px))
              rotate(var(--m-weaponListSvg-rot, 0deg))
@@ -811,11 +812,16 @@ body { user-select: none; cursor: default; }
   justify-content: center;
   min-height: calc(36px * var(--scale));
 }
+/* 1 / 2 / 3 号槽位图标左右镜像（步枪·手枪·刀 朝向翻转）；4、5 号不镜像 */
+.weapon-bar-svg .slot[data-slot="1"],
+.weapon-bar-svg .slot[data-slot="2"],
+.weapon-bar-svg .slot[data-slot="3"] { --wl-svg-mirror: -1; }
 .weapon-bar-svg .ico {
   width: calc(46px * var(--scale));
   height: calc(46px * var(--scale));
   color: var(--wl-svg-color, #3b82f6);
   display: flex;
+  transform: scaleX(var(--wl-svg-mirror, 1));
   transition: color 150ms linear, filter 150ms linear, transform 150ms ease;
 }
 .weapon-bar-svg .ico svg { width: 100%; height: 100%; display: block; }
@@ -824,7 +830,7 @@ body { user-select: none; cursor: default; }
 .weapon-bar-svg .ico path { fill: currentColor; stroke: none; }
 .weapon-bar-svg .wnum {
   position: absolute;
-  right: calc(-16px * var(--scale));
+  right: calc(-26px * var(--scale));   /* 相对等宽槽位右缘 → 所有编号同一 x，列对齐 */
   bottom: calc(-4px * var(--scale));
   font-size: calc(18px * var(--scale));
   font-weight: 700;
@@ -835,7 +841,7 @@ body { user-select: none; cursor: default; }
 .weapon-bar-svg .slot.active > .ico {
   color: var(--wl-svg-active, #FFFFFF);
   filter: drop-shadow(0 0 var(--wl-svg-glow, 0px) var(--wl-svg-glow-color, #3b82f6));
-  transform: scale(1.18);
+  transform: scaleX(var(--wl-svg-mirror, 1)) scale(1.18);
 }
 .weapon-bar-svg .grenades {
   display: flex;
@@ -846,7 +852,7 @@ body { user-select: none; cursor: default; }
 .weapon-bar-svg .grenades .ico.hot {
   color: var(--wl-svg-active, #FFFFFF);
   filter: drop-shadow(0 0 var(--wl-svg-glow, 0px) var(--wl-svg-glow-color, #3b82f6));
-  transform: scale(1.18);
+  transform: scaleX(var(--wl-svg-mirror, 1)) scale(1.18);
 }
 .weapon-bar-svg .slot.empty { display: none; }
 
