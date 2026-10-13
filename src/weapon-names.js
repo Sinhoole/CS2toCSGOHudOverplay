@@ -57,6 +57,7 @@ const NAMES = {
   // ---- 其他 ----
   weapon_taser: '电击枪',
   weapon_c4: 'C4',
+  weapon_defuser: '拆弹器',   // CT 的拆弹器（钳子）。GSI 里它不是武器，由 gsi.js 合成进 5 号槽位
   weapon_healthshot: '医疗针',
 };
 

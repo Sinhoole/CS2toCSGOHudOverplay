@@ -281,7 +281,7 @@ class GsiHub {
       scoreT: num(map.team_t?.score, 0),
       aliveCT: alive.ct,
       aliveT: alive.t,
-      slots: this._slots(weapons),
+      slots: this._slots(weapons, player.team, !!state.defusekit),
 
       // ---- 队友 / 对手名单（allplayers，仅观察者视角）----
       roster: roster.players,
@@ -314,9 +314,10 @@ class GsiHub {
   /**
    * 右侧武器栏的 1-5 号槽位。
    * 1 主武器 / 2 副武器 / 3 近战 / 4 投掷物（单字，按固定顺位）/ 5 特殊装备
+   * 5 号：匪徒持 C4 显示 C4；CT 带拆弹器显示拆弹器（GSI 不给拆弹器武器，按 team+defusekit 合成）。
    * 返回的 label 已经是可以直接显示的中文名。
    */
-  _slots(weapons) {
+  _slots(weapons, team, hasDefuse) {
     const out = [
       { slot: 1, name: '', label: '', active: false },
       { slot: 2, name: '', label: '', active: false },
@@ -356,6 +357,13 @@ class GsiHub {
     out[3].ids = grenades.map((x) => x.id);
     out[3].activeIndex = grenades.findIndex((x) => x.active);
     out[3].active = out[3].activeIndex >= 0;
+
+    // 5 号槽位兜底：CT 带拆弹器时显示拆弹器（GSI 里拆弹器不是武器，得自己合成）。
+    // 没带 C4（CT 本来就拿不到）且身上有拆弹器时才填。
+    if (!out[4].name && hasDefuse && team === 'CT') {
+      out[4].name = 'weapon_defuser';
+      out[4].label = displayName('weapon_defuser');
+    }
     return out;
   }
 

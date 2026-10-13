@@ -95,7 +95,20 @@ check('槽1 选中态', sl[0].active === true);
 check('槽2 = 格洛克18型', sl[1].label === '格洛克18型', `实际 ${sl[1].label}`);
 check('槽3 = 匕首', sl[2].label === '匕首', `实际 ${sl[2].label}`);
 check('槽4 投掷物固定顺位 火烟雷闪诱', sl[3].chars.join('') === '火烟雷闪诱', `实际 ${sl[3].chars.join('')}`);
-check('槽5 = C4', sl[4].label === 'C4', `实际 ${sl[4].label}`);
+check('槽5 = 拆弹器（本 mock 是 CT 方，带拆弹器）', sl[4].label === '拆弹器', `实际 ${sl[4].label}`);
+
+// 匪徒方：持 C4 → 槽5 = C4（拆弹器合成不会误填）
+{
+  const pT = buildPayload(20);
+  pT.player.team = 'T';
+  pT.player.state.defusekit = false;
+  pT.player.weapons.weapon_c4 = { name: 'weapon_c4', type: 'C4', state: 'holstered' };
+  const hubT = new GsiHub(cfg);
+  let sT = null;
+  hubT.onSnapshot((s) => (sT = s));
+  hubT._ingest(JSON.stringify(pT), '');
+  check('槽5 = C4（匪徒方持 C4）', sT.slots[4].label === 'C4', `实际 ${sT.slots[4].label}`);
+}
 
 feed(60);
 const sl2 = last.slots;
@@ -821,7 +834,16 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     check('从 asstes 目录加载到全部武器图标', n >= 90, `${n} 个`);
     check('加载结果含 ak47.svg 且已归一化',
       !!loaded.files && !!loaded.files['ak47.svg'] && loaded.files['ak47.svg'].includes('currentColor'));
+    check('图标表含拆弹器 defuser.svg', !!loaded.files && !!loaded.files['defuser.svg']);
   }
+
+  // 5 号槽位：匪徒持 C4，CT 带拆弹器
+  const gsiJs = read('src/gsi.js');
+  check('武器名表含 weapon_defuser（拆弹器）', read('src/weapon-names.js').includes('weapon_defuser'));
+  check('gsi 把 team / defusekit 传给 _slots',
+    gsiJs.includes('this._slots(weapons, player.team, !!state.defusekit)'));
+  check('gsi 在 CT 带拆弹器时把 5 号槽位合成 weapon_defuser',
+    gsiJs.includes("out[4].name = 'weapon_defuser'") && gsiJs.includes("team === 'CT'"));
   check('HUD 渲染层有 renderWeaponBarSvg', hudJs.includes('function renderWeaponBarSvg'));
   check('HUD 按 svgMode 切换 SVG 栏显隐', hudJs.includes('wl.svgMode === true'));
   check('applyModules 写出 SVG 栏位置/辉光变量', hudJs.includes('--m-weaponListSvg-x'));

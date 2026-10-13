@@ -124,7 +124,8 @@ function buildWeapons(local, clip, reserve) {
     weapon_4: { name: 'weapon_hegrenade', type: 'Grenade', state: st('weapon_hegrenade') },
     weapon_5: { name: 'weapon_flashbang', type: 'Grenade', state: st('weapon_flashbang') },
     weapon_6: { name: 'weapon_decoy', type: 'Grenade', state: st('weapon_decoy') },
-    weapon_7: { name: 'weapon_c4', type: 'C4', state: 'holstered' },
+    // 本 mock 是 CT 方（state.defusekit=true）→ 5 号槽位显示拆弹器；
+    // 匪徒方的 C4 不在 weapons 里合成，要预览请把下面这行换成 weapon_c4 且 team 改 T。
   };
   if (hasPrimary) {
     out.weapon_1 = { name: 'weapon_ak47', type: 'Rifle', ammo_clip: clip, ammo_clip_max: 30, ammo_reserve: reserve, state: st('weapon_ak47') };
