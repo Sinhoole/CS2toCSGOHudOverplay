@@ -1,0 +1,211 @@
+/* ================================================================
+ * OverplayHUD · 武器栏：文字态 + 纯色剪影图标态
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* ============================================================
+   右侧武器栏（纯文字方案，零图标素材）
+   1-5 号竖向槽位，右对齐屏幕边缘，编号在最右、文字在编号左侧。
+   三级状态只用颜色 / 字重 / 透明度区分，切换只做 0.15s 颜色过渡，
+   无位移、无缩放，保持界面稳定。
+   ============================================================ */
+.weapon-bar {
+  position: absolute;
+  right: calc(var(--inset-x) - var(--offx, 0px) + calc(20px * var(--scale)));
+  bottom: calc(var(--bar-h) + var(--inset-y) + var(--offy, 0px) + calc(16px * var(--scale)));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(8px * var(--scale));
+}
+
+.slot {
+  display: flex;
+  align-items: baseline;
+  gap: calc(14px * var(--scale));
+  min-height: calc(30px * var(--scale));
+}
+
+/* 状态 2：已拥有但未手持 —— 中灰、常规字重、约 60% 透明度 */
+.slot .wtext {
+  font-size: calc(42px * var(--scale));
+  font-weight: 400;
+  line-height: 1;
+  color: var(--wtext-dim, rgba(242, 245, 247, 0.6));
+  transition: color 150ms linear;
+}
+
+/* 投掷物单字：约主武器的 2/3 */
+.slot[data-slot="4"] .wtext { font-size: calc(28px * var(--scale)); }
+
+/* 编号做成固定宽度的右对齐列，逐行叠成一条整齐的竖线，与左侧文字同基线 */
+.slot .wnum {
+  min-width: calc(22px * var(--scale));
+  text-align: right;
+  font-size: calc(22px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  color: var(--white);
+  transition: color 150ms linear;
+}
+
+/* 状态 1：当前手持 —— 纯白、粗体、不透明。
+   投掷物槽（4 号）例外：那一行有好几个字，整串一起变白很扎眼，
+   改成只点亮当前手持的那一颗（.gchar.hot），其余保持暗色。 */
+.slot.active:not([data-slot="4"]) .wtext { color: var(--wtext-color, var(--white)); font-weight: 700; }
+
+/* 状态 3：未拥有 / 已消耗 —— 文字留空，键位编号保留浅灰 */
+/* 没有装备的槽位整行收起，后面的顺位顶上；捡到后按顺位插回 */
+.slot.empty { display: none; }
+
+/* 投掷物：单字 + 间隔号，分隔符颜色与文字同步 */
+.wtext.grenades { display: inline-flex; align-items: baseline; }
+.gchar { display: inline-block; transition: color 150ms linear; }
+.gchar.g-in { animation: g-in 160ms ease-out both; }
+.gsep { margin: 0 calc(3px * var(--scale)); opacity: 0.8; transition: color 150ms linear; }
+
+/* 只点亮当前手持的那一颗投掷物，其余保持未手持的暗色 */
+.gchar.hot { color: var(--wtext-color, var(--white)); font-weight: 700; }
+.gchar.hot + .gsep,
+.gsep:has(+ .gchar.hot) { color: var(--wtext-color, var(--white)); }
+
+@keyframes g-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gchar.g-in { animation: none; }
+}
+
+/* ============================================================
+   武器栏 SVG 态：纯色剪影图标（独立开关，可与文字态并存）
+   ============================================================ */
+.weapon-bar-svg {
+  position: absolute;
+  right: calc(var(--inset-x) - var(--offx, 0px) + calc(20px * var(--scale)));
+  bottom: calc(var(--bar-h) + var(--inset-y) + var(--offy, 0px) + calc(16px * var(--scale)));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;                      /* 各槽位等宽 → 右侧编号对齐成一列 */
+  padding-right: calc(var(--wl-svg-num-gap, 26px) * var(--scale));  /* 给右侧编号栏留位（距离可调） */
+  gap: calc(var(--wl-svg-gap, 12px) * var(--scale));   /* 行间距，可在设置里调 */
+  transform: translate(var(--m-weaponListSvg-x, 0px), var(--m-weaponListSvg-y, 0px))
+             rotate(var(--m-weaponListSvg-rot, 0deg))
+             scale(var(--m-weaponListSvg-sx, 1), var(--m-weaponListSvg-sy, 1));
+  transform-origin: bottom right;
+  pointer-events: none;
+}
+.weapon-bar-svg .slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;      /* 图标在上、名称在下 */
+  align-items: flex-end;       /* 两者都贴右缘：图标仍成一列、名称右对齐 */
+  min-height: calc(36px * var(--scale));
+}
+/* 1 / 2 / 3 号槽位图标左右镜像（步枪·手枪·刀 朝向翻转）；4、5 号不镜像 */
+.weapon-bar-svg .slot[data-slot="1"],
+.weapon-bar-svg .slot[data-slot="2"],
+.weapon-bar-svg .slot[data-slot="3"] { --wl-svg-mirror: -1; }
+.weapon-bar-svg .ico {
+  width: calc(46px * var(--scale));
+  height: calc(46px * var(--scale));
+  color: var(--wl-svg-color, #3b82f6);
+  display: flex;
+  transform: scaleX(var(--wl-svg-mirror, 1));
+  transition: color 150ms linear, filter 150ms linear, transform 150ms ease;
+}
+.weapon-bar-svg .ico svg { width: 100%; height: 100%; display: block; }
+/* ⚠️ 必须覆盖上面的全局 `.ico path`（那条是给血量/护甲图标用的：浅填充 + 白描边）。
+   武器剪影要的是「实心」，不覆盖就会被画成空心描边线。 */
+.weapon-bar-svg .ico path { fill: currentColor; stroke: none; }
+.weapon-bar-svg .wnum {
+  position: absolute;
+  right: calc(-1 * var(--wl-svg-num-gap, 26px) * var(--scale));   /* 相对等宽槽位右缘 → 所有编号同一 x，列对齐 */
+  top: 0;
+  height: calc(46px * var(--scale));   /* 和 .ico 等高 → 编号垂直居中在「图标那一行」，
+                                          名称出现在下方时编号也不会跟着往下掉 */
+  display: flex;
+  align-items: center;
+  font-size: calc(18px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  color: var(--white);
+  text-shadow: 0 0 calc(2px * var(--scale)) #000;
+}
+.weapon-bar-svg .slot.active > .ico {
+  color: var(--wl-svg-active, #FFFFFF);
+  filter: drop-shadow(0 0 var(--wl-svg-glow, 0px) var(--wl-svg-glow-color, #3b82f6));
+  transform: scaleX(var(--wl-svg-mirror, 1)) scale(var(--wl-svg-active-scale, 1.18));
+}
+.weapon-bar-svg .grenades {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(6px * var(--scale));
+  min-height: calc(46px * var(--scale));   /* 与 .ico 等高 → 投掷物行竖中也和编号对齐 */
+  padding-top: calc(6px * var(--scale));   /* (46-34)/2 → 34px 图标在 46px 行里居中，对得上编号 */
+}
+.weapon-bar-svg .grenades .ico { width: calc(34px * var(--scale)); height: calc(34px * var(--scale)); }
+.weapon-bar-svg .grenades .ico.hot {
+  color: var(--wl-svg-active, #FFFFFF);
+  filter: drop-shadow(0 0 var(--wl-svg-glow, 0px) var(--wl-svg-glow-color, #3b82f6));
+  transform: scaleX(var(--wl-svg-mirror, 1)) scale(var(--wl-svg-active-scale, 1.18));
+}
+.weapon-bar-svg .slot.empty { display: none; }
+
+/* 4 号槽位（投掷物）是一「排」图标，名称要贴在「手上那一颗」的正下方 ——
+   挂在整排下面是错的（看着像在标最后一颗），甩到右边也是错的。
+   所以每颗投掷物各自包一层 .nade：图标在上、名字在下，只有手持那颗显示名字。 */
+.weapon-bar-svg .grenades .nade {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+  width: calc(34px * var(--scale));   /* 固定宽 → 名字溢出也不会挤动整排图标 */
+}
+.weapon-bar-svg .grenades .nname {
+  margin-top: calc(2px * var(--scale));
+  font-size: calc(var(--wl-svg-name-size, 13px) * var(--scale));
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;                /* 居中溢出，不换行 */
+  color: var(--wl-svg-name-color, #FFFFFF);
+  text-shadow: 0 0 calc(3px * var(--scale)) #000;
+  transform: translate(var(--wl-svg-name-dx, 0px), var(--wl-svg-name-dy, 0px));
+  opacity: 0;
+  transition: opacity 150ms linear, color 150ms linear, text-shadow 150ms linear, transform 150ms linear;
+}
+.weapon-bar-svg .grenades .nname.on { opacity: 1; }
+/* 手持那颗的名字：辉光走名称自己的开关与颜色 */
+.weapon-bar-svg .grenades .nname.on.act {
+  text-shadow: 0 0 var(--wl-svg-name-glow, 0px) var(--wl-svg-name-glow-color, var(--wl-svg-glow-color, #3b82f6)),
+               0 0 calc(3px * var(--scale)) #000;
+}
+
+/* ---- 行内名称（单图标槽位：在图标「下方」，跟着图标右缘对齐） ----
+   注意：它是 .slot 的直接子元素、不在 .ico 里 ——
+   1) 不受 1/2/3 号槽位的镜像 transform 影响，文字不会反；
+   2) 参与布局（不是浮在 gap 上），所以行高真的会长出来，「行间距」负责把两行分开。
+   4 号投掷物行的「手持那颗」名字不走这里，走 .grenades .nname（贴各自图标下方）。 */
+.weapon-bar-svg .wl-name {
+  margin-top: calc(3px * var(--scale));
+  font-size: calc(var(--wl-svg-name-size, 13px) * var(--scale));
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  color: var(--wl-svg-name-color, #FFFFFF);
+  text-shadow: 0 0 calc(3px * var(--scale)) #000;
+  transform: translate(var(--wl-svg-name-dx, 0px), var(--wl-svg-name-dy, 0px));
+  opacity: 0;
+  transition: opacity 150ms linear, color 150ms linear, text-shadow 150ms linear, transform 150ms linear;
+}
+.weapon-bar-svg .wl-name.on { opacity: 1; }
+/* 常显栏名：没选中时也在，压低一点存在感，不抢选中武器名 */
+.weapon-bar-svg .wl-name.on.pin { opacity: 0.7; }
+/* 选中武器名：辉光走名称自己的开关与颜色（svg.nameGlow / nameGlowColor） */
+.weapon-bar-svg .wl-name.on.act {
+  text-shadow: 0 0 var(--wl-svg-name-glow, 0px) var(--wl-svg-name-glow-color, var(--wl-svg-glow-color, #3b82f6)),
+               0 0 calc(3px * var(--scale)) #000;
+}

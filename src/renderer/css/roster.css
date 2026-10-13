@@ -1,0 +1,120 @@
+/* ================================================================
+ * OverplayHUD · 队友 / 对手名单面板
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* ============================================================
+   队友 / 对手名单面板
+   数据来自 GSI 的 allplayers —— 只有死亡观战 / GOTV / 回放时才有，
+   存活期间游戏不下发，此时整块面板隐藏（不是显示空壳）。
+   默认贴右上角，行内右侧贴屏幕边，所以底栏向左渐隐。
+   ============================================================ */
+.roster {
+  position: absolute;
+  top: calc(var(--inset-y) + var(--offy, 0px));
+  right: calc(var(--inset-x) - var(--offx, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(4px * var(--scale));
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.roster.off { display: none; }
+
+#rosterPanel {
+  transform: translate(var(--m-roster-x, 0px), var(--m-roster-y, 0px))
+             rotate(var(--m-roster-rot, 0deg))
+             scale(var(--m-roster-sx, 1), var(--m-roster-sy, 1));
+  transform-origin: top right;
+}
+
+.roster-row {
+  display: flex;
+  align-items: center;
+  gap: calc(13px * var(--scale));
+  padding: calc(4px * var(--scale)) calc(15px * var(--scale)) calc(4px * var(--scale)) calc(40px * var(--scale));
+  background: linear-gradient(270deg,
+    rgba(var(--roster-bar, 14, 19, 26), var(--roster-bar-a, 0.5)) 0%,
+    rgba(var(--roster-bar, 14, 19, 26), var(--roster-bar-a, 0.5)) calc(100% - calc(32px * var(--scale))),
+    rgba(var(--roster-bar, 14, 19, 26), 0) 100%);
+}
+
+.roster-row.dead { opacity: 0.42; }
+.roster-row.self .roster-name { color: var(--roster-self, #E8C46A); }
+.roster-row.dead .roster-name { color: var(--roster-dead, #7A828B); }
+
+.roster-dot {
+  flex: 0 0 auto;
+  width: calc(7px * var(--scale));
+  height: calc(7px * var(--scale));
+  border-radius: 50%;
+  background: var(--roster-alive, #F2F5F7);
+  box-shadow: 0 0 calc(7px * var(--scale)) rgba(242, 245, 247, 0.45);
+}
+.roster-row.dead .roster-dot {
+  background: var(--roster-dead, #7A828B);
+  box-shadow: none;
+}
+
+.roster-name {
+  flex: 0 0 auto;
+  width: calc(112px * var(--scale));
+  font-size: calc(15px * var(--scale));
+  font-weight: 600;
+  color: var(--roster-text, #FFFFFF);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 列宽要按「中文名最长的那个」留余量（比如 M4A1消音型 = 沙漠之鹰），
+   否则文字会往左溢出、压到名字列上。 */
+.roster-weapon {
+  flex: 0 0 auto;
+  width: calc(98px * var(--scale));
+  font-size: calc(14px * var(--scale));
+  font-weight: 600;
+  color: var(--roster-accent, #4C8DFF);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.roster-hp,
+.roster-armor,
+.roster-kda,
+.roster-money {
+  flex: 0 0 auto;
+  font-size: calc(14px * var(--scale));
+  font-variant-numeric: tabular-nums;
+  color: var(--roster-dim, rgba(242, 245, 247, 0.55));
+  text-align: right;
+  white-space: nowrap;
+}
+.roster-hp    { width: calc(34px * var(--scale)); }
+.roster-armor { width: calc(44px * var(--scale)); }
+.roster-kda   { width: calc(68px * var(--scale)); }
+.roster-money { width: calc(52px * var(--scale)); }
+
+/* 低血量在名单里也要一眼看见 */
+.roster-row.hurt .roster-hp { color: #E8231C; font-weight: 700; }
+
+.roster-bomb {
+  flex: 0 0 auto;
+  font-size: calc(11px * var(--scale));
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #F0B23A;
+}
+
+.roster-group {
+  padding: calc(5px * var(--scale)) calc(15px * var(--scale)) 0;
+  font-size: calc(11.5px * var(--scale));
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--roster-accent, #4C8DFF);
+}

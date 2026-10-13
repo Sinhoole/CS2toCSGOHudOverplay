@@ -1,0 +1,103 @@
+/* ================================================================
+ * OverplayHUD · 右下：连杀骷髅徽章 + 弹药 + 子弹装饰
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* ============================================================
+   右下：连杀骷髅 + 弹药
+   无实体底栏 —— 元素直接压在武器模型上，靠 1px 深色描边保证可读性。
+   层级：弹匣数（最强）> 备弹数 > 骷髅徽章 > 子弹装饰图标
+   ============================================================ */
+#rightBar {
+  /* 和金钱 / 血甲同一种羽化底栏 */
+  padding-right: calc(var(--inset-x) - var(--offx, 0px) + calc(20px * var(--scale)));
+  padding-left: calc(96px * var(--scale));
+}
+
+.ammo-block {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: calc(18px * var(--scale));
+}
+
+/* ---- 连杀骷髅徽章：每击杀 1 人新增 1 枚，最多 5 枚 ---- */
+.kills {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(1px * var(--scale));
+}
+
+.badge {
+  display: none;
+  width: calc(30px * var(--scale));
+  height: calc(35px * var(--scale));
+}
+
+.badge.on { display: block; }
+
+/* 新徽章：0.2 秒淡入 + 轻微放大回弹；已存在的徽章保持静止 */
+.badge.on.fresh {
+  animation: badge-in 200ms cubic-bezier(0.2, 0.9, 0.3, 1.35) both;
+}
+
+@keyframes badge-in {
+  0%   { opacity: 0; transform: scale(0.65); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge.on.fresh { animation: none; }
+}
+
+/* ---- 弹匣 / 备弹 ---- */
+.clipwrap {
+  display: flex;
+  align-items: baseline;
+  gap: calc(5px * var(--scale));
+}
+
+.clip {
+  color: var(--white);
+  font-size: calc(62px * var(--scale));
+  font-weight: 700;
+  line-height: 0.9;
+  min-width: calc(80px * var(--scale));
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--outline-text);
+  transition: color 110ms linear;
+}
+
+.clip.is-empty { color: var(--red); }
+
+.slash,
+.reserve {
+  color: var(--white);
+  font-size: calc(30px * var(--scale));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--outline-text);
+}
+
+/* ---- 子弹装饰：固定 5 枚，斜排上升，全程静止 ---- */
+.bullets {
+  display: flex;
+  align-items: flex-end;
+  margin-left: calc(4px * var(--scale));
+}
+
+.bullets svg {
+  width: calc(15px * var(--scale));
+  height: calc(33px * var(--scale));
+  margin-left: calc(-2px * var(--scale));
+  transform-origin: 50% 100%;
+}
+
+.bullets svg:first-child { margin-left: 0; }
+
+/* 每颗各自倾斜，整体水平一排（底部对齐，不做上下错位） */
+.bullets svg:nth-child(n) { transform: rotate(20deg); }

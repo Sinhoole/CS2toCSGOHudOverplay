@@ -12,11 +12,13 @@
     "y": 0.95
   },
   "enableInteraction": false,
+  "openSettingsOnStart": true,
   "layout": {
     "offsetX": 0,
     "offsetY": 0
   },
   "font": {
+    "preset": "default",
     "family": "Segoe UI"
   },
   "text": {
@@ -98,7 +100,75 @@
       "glow": 0,
       "glowColor": "#FFFFFF",
       "textColor": "#FFFFFF",
-      "dimColor": "rgba(255, 255, 255, 0.77)"
+      "dimColor": "rgba(255, 255, 255, 0.77)",
+      "svgMode": true,
+      "svg": {
+        "offsetX": 27,
+        "offsetY": -68,
+        "scaleX": 2.46,
+        "scaleY": 1.73,
+        "rotate": 0,
+        "opacity": 1,
+        "color": "#545454",
+        "activeColor": "#FFFFFF",
+        "glow": 0,
+        "glowColor": "#FF0000",
+        "gap": 12,
+        "numGap": 26,
+        "activeScale": 1.18,
+        "showName": true,
+        "nameSize": 13,
+        "nameColor": "#FFFFFF",
+        "nameOffsetX": 0,
+        "nameOffsetY": 0,
+        "nameGlow": true,
+        "nameGlowColor": "",
+        "slotNames": {
+          "1": "",
+          "2": "",
+          "3": "",
+          "4": "",
+          "5": ""
+        },
+        "idleHideMs": 3000,
+        "icons": {
+          "1": "",
+          "2": "",
+          "3": "",
+          "4": "",
+          "5": ""
+        },
+        "colors": {
+          "1": "#FFFFFF",
+          "2": "#FFFFFF",
+          "3": "",
+          "4": "",
+          "5": ""
+        },
+        "glowColors": {
+          "1": "",
+          "2": "",
+          "3": "",
+          "4": "",
+          "5": ""
+        },
+        "knives": {
+          "weapon_bayonet": "knife_butterfly.svg",
+          "weapon_knife": "knife_butterfly.svg",
+          "weapon_knifegg": "knife_butterfly.svg",
+          "weapon_knife_bowie": "knife_butterfly.svg",
+          "weapon_knife_butterfly": "knife_butterfly.svg",
+          "weapon_knife_canis": "knife_butterfly.svg",
+          "weapon_knife_cord": "knife_butterfly.svg",
+          "weapon_knife_css": "knife_butterfly.svg",
+          "weapon_melee": "knife_butterfly.svg",
+          "weapon_knife_widowmaker": "knife_butterfly.svg",
+          "weapon_knife_ursus": "knife_butterfly.svg",
+          "weapon_knife_twinblade": "knife_butterfly.svg",
+          "weapon_knife_tactical": "knife_butterfly.svg",
+          "weapon_knife_t": "knife_butterfly.svg"
+        }
+      }
     },
     "roster": {
       "offsetX": 0,
@@ -370,8 +440,8 @@
     "money": true,
     "ammo": true,
     "roundKills": true,
-    "weaponList": true,
-    "weaponTextOutline": true,
+    "weaponList": false,
+    "weaponTextOutline": false,
     "defuseKit": true,
     "roster": false
   },

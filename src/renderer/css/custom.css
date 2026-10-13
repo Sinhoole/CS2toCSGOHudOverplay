@@ -1,0 +1,175 @@
+/* ================================================================
+ * OverplayHUD · 自定义文本元素 + 画图形状 + 两者的进阶外观覆盖
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* ============================================================
+   自定义文本元素
+   9 个锚点 + 位移 + 缩放，内容用 {变量} 插值。
+   位移是屏幕像素、不受缩放影响；字号跟着全局 --scale 走。
+   每项都有独立的 transform-origin，放大时不会把文本推离边缘。
+   ============================================================ */
+.custom-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.custom-item {
+  position: absolute;
+  isolation: isolate;
+  display: block;
+  font-size: calc(var(--ci-size, 28px) * var(--scale));
+  font-weight: 700;
+  line-height: 1.18;
+  color: var(--ci-color, #FFFFFF);
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--outline-text);
+  transform: rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+}
+
+.custom-item.off { display: none; }
+
+/* 关掉描边时退回普通投影 */
+.custom-item.thin { text-shadow: var(--shadow-text); }
+
+.custom-item.al-left   { text-align: left; }
+.custom-item.al-center { text-align: center; }
+.custom-item.al-right  { text-align: right; }
+
+/* ---- 9 个锚点 ---- */
+.custom-item.a-tl {
+  left: calc(var(--inset-x, 0px) + var(--ci-x, 0px));
+  top: calc(var(--inset-y, 0px) + var(--ci-y, 0px));
+  transform-origin: left top;
+}
+.custom-item.a-tc {
+  left: calc(50% + var(--ci-x, 0px));
+  top: calc(var(--inset-y, 0px) + var(--ci-y, 0px));
+  transform: translateX(-50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: center top;
+}
+.custom-item.a-tr {
+  right: calc(var(--inset-x, 0px) - var(--ci-x, 0px));
+  top: calc(var(--inset-y, 0px) + var(--ci-y, 0px));
+  transform-origin: right top;
+}
+
+.custom-item.a-ml {
+  left: calc(var(--inset-x, 0px) + var(--ci-x, 0px));
+  top: calc(50% + var(--ci-y, 0px));
+  transform: translateY(-50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: left center;
+}
+.custom-item.a-mc {
+  left: calc(50% + var(--ci-x, 0px));
+  top: calc(50% + var(--ci-y, 0px));
+  transform: translate(-50%, -50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: center;
+}
+.custom-item.a-mr {
+  right: calc(var(--inset-x, 0px) - var(--ci-x, 0px));
+  top: calc(50% + var(--ci-y, 0px));
+  transform: translateY(-50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: right center;
+}
+
+.custom-item.a-bl {
+  left: calc(var(--inset-x, 0px) + var(--ci-x, 0px));
+  bottom: calc(var(--inset-y, 0px) - var(--ci-y, 0px));
+  transform-origin: left bottom;
+}
+.custom-item.a-bc {
+  left: calc(50% + var(--ci-x, 0px));
+  bottom: calc(var(--inset-y, 0px) - var(--ci-y, 0px));
+  transform: translateX(-50%) rotate(var(--ci-rot, 0deg)) scale(var(--ci-scale, 1));
+  transform-origin: center bottom;
+}
+.custom-item.a-br {
+  right: calc(var(--inset-x, 0px) - var(--ci-x, 0px));
+  bottom: calc(var(--inset-y, 0px) - var(--ci-y, 0px));
+  transform-origin: right bottom;
+}
+
+/* 可选：给自定义文本垫一条两端渐隐的暗色底栏（跟金钱/血甲同一套语言）。
+   左侧锚点向右渐隐，右侧锚点向左渐隐。 */
+.custom-item.has-bar::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: calc(-20px * var(--scale));
+  right: calc(-30px * var(--scale));
+  top: calc(-9px * var(--scale));
+  bottom: calc(-9px * var(--scale));
+  background: linear-gradient(90deg,
+    rgba(var(--ci-bar, 14, 19, 26), var(--ci-bar-a, 0.5)) 0%,
+    rgba(var(--ci-bar, 14, 19, 26), var(--ci-bar-a, 0.5)) 58%,
+    rgba(var(--ci-bar, 14, 19, 26), 0) 100%);
+}
+.custom-item.has-bar.a-tr::before,
+.custom-item.has-bar.a-mr::before,
+.custom-item.has-bar.a-br::before {
+  left: calc(-30px * var(--scale));
+  right: calc(-20px * var(--scale));
+  background: linear-gradient(270deg,
+    rgba(var(--ci-bar, 14, 19, 26), var(--ci-bar-a, 0.5)) 0%,
+    rgba(var(--ci-bar, 14, 19, 26), var(--ci-bar-a, 0.5)) 58%,
+    rgba(var(--ci-bar, 14, 19, 26), 0) 100%);
+}
+
+/* ============================================================
+   画图生成的形状元素（config.shapes）
+   —— 每块是一张自绘 SVG，锚点 / 位移 / 缩放 / 旋转在这里内联定位。
+   ============================================================ */
+.shape-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.shape-item {
+  position: absolute;
+  isolation: isolate;
+}
+
+.shape-item.off { display: none; }
+
+.shape-item .shape-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* 形状里的文字默认继承 HUD 字体；进阶覆盖由 --si-* 变量驱动 */
+.shape-item text {
+  font-family: var(--font-hud, inherit);
+  font-weight: var(--si-weight, 700);
+  letter-spacing: var(--si-ls, 0em);
+}
+.shape-item.si-italic text { font-style: italic; }
+.shape-item.si-outline text {
+  -webkit-text-stroke: var(--si-ol-w, 2px) var(--si-ol-c, #000000);
+  paint-order: stroke fill;
+}
+
+/* ============================================================
+   自定义文本元素的进阶外观（只有显式配置了「custom.N」覆盖才出现）
+   ============================================================ */
+.custom-item.ci-adv { display: inline-flex; align-items: center; gap: var(--ci-gap, 8px); }
+.custom-item.ci-adv.ci-ico-right { flex-direction: row-reverse; }
+.custom-item.ci-adv .ci-txt { font-weight: var(--ci-weight, 700); letter-spacing: var(--ci-ls, 0em); }
+.custom-item.ci-adv.ci-italic .ci-txt { font-style: italic; }
+.custom-item.ci-adv.ci-outline .ci-txt,
+.custom-item.ci-adv.ci-outline .ci-ico {
+  -webkit-text-stroke: var(--ci-ol-w, 2px) var(--ci-ol-c, #000000);
+  paint-order: stroke fill;
+}
+.custom-item.ci-adv .ci-ico { flex: 0 0 auto; font-size: 1.1em; line-height: 1; }
+.custom-item.ci-adv .ci-ico svg { height: calc(1em * var(--ci-icon-size, 1)); width: auto; display: block; }
+.custom-item.ci-adv .ci-ico img { height: calc(1em * var(--ci-icon-size, 1)); width: auto; object-fit: contain; }

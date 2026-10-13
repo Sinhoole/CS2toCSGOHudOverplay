@@ -1,0 +1,200 @@
+/* ================================================================
+ * OverplayHUD · 令牌 + 容器 + 底栏 + 组件开关 + 每块 HUD 的位移/缩放
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* OverplayHUD —— CS:GO / CS2 底部血甲 HUD 复刻
+   设计基准 1920x1080，所有尺寸乘 var(--scale) 适配任意分辨率。
+
+   状态分级（血量）：
+     >= 50        白填充，无发光
+     49 ~ 26      红填充，无发光
+     <= 25        红填充 + 红色外发光（血量越低越强），底栏左侧叠红渐变
+   护甲全程无预警色、无发光。
+*/
+
+:root {
+  --scale: 1;
+  --inset-x: 26px;
+  --inset-y: 22px;
+
+  --font-hud: "Bahnschrift", "DIN Alternate", "Segoe UI Variable Display",
+              "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+
+  /* 底栏 */
+  --bar-alpha: 0.50;
+  --bar-color: 14, 19, 26;
+  --bar-h: calc(96px * var(--scale));
+  --bar-pad-l: calc(30px * var(--scale));
+  --bar-pad-r: calc(150px * var(--scale));
+
+  /* 前景 */
+  --white: #F3F6F8;
+  --dim: rgba(243, 246, 248, 0.62);
+  --red: #E8231C;
+  --money-gain: #A6D94A;      /* 击杀奖励 / 收入 */
+  --money-spend: #E8231C;     /* 购买支出 */
+  --glow-rgb: 255, 46, 36;
+  --glow: 0;                       /* 0~1，由 JS 按血量注入，越低越亮 */
+
+  /* 图标：浅灰填充 + 白色细描边 */
+  --ico-fill: rgba(232, 238, 242, 0.34);
+  --ico-stroke: rgba(255, 255, 255, 0.88);
+  --ico-helmet: rgba(255, 255, 255, 0.50);
+
+  /* 进度条 */
+  --track-health: rgba(255, 255, 255, 0.30);
+  --track-armor: rgba(255, 255, 255, 0.18);
+  --bar-outline: rgba(0, 0, 0, 0.45);
+
+  /* 阴影 */
+  --shadow-text: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 1px rgba(0, 0, 0, 0.9);
+  /* 压在武器模型上用的 1px 深色描边。刻意不写 calc()，
+     因为 calc 出现在 text-shadow 里会让整条声明被丢弃 */
+  --outline-text: -1px 0 0 rgba(0, 0, 0, 0.92), 1px 0 0 rgba(0, 0, 0, 0.92),
+                  0 -1px 0 rgba(0, 0, 0, 0.92), 0 1px 0 rgba(0, 0, 0, 0.92),
+                  0 2px 4px rgba(0, 0, 0, 0.8);
+
+  --ct: #7FB2E5;
+  --t: #E3A03C;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--font-hud);
+  -webkit-font-smoothing: antialiased;
+}
+
+body { user-select: none; cursor: default; }
+
+.hud {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  transition: opacity 180ms linear;
+  /* fill 模式（4:3 拉伸）由 JS 把 .hud 固定成虚拟画布尺寸并整体 scaleX，
+     所以这里要允许 JS 用 left/top/width 接管；JS 在非 fill 模式会清回 inset:0。 */
+  transform-origin: left top;
+}
+
+.hud.hidden { opacity: 0; }
+
+/* ============================================================
+   底栏：半透明深灰横条，左右两端渐隐羽化，无硬边缘
+   ============================================================ */
+/* 底栏通用：左边缘固定在屏幕最左，内容用 padding 推到位，
+   这样底栏自身的渐隐和内容的左对齐可以同时成立。
+   宽度是 shrink-to-fit，所以金额位数变化时只向右延伸，左边界不动。 */
+.hud-strip {
+  position: absolute;
+  left: 0;
+  padding-left: calc(var(--inset-x) + var(--bar-pad-l) + var(--offx, 0px));
+  background: linear-gradient(90deg,
+    rgba(var(--bar-color), 0) 0%,
+    rgba(var(--bar-color), var(--bar-alpha)) calc(84px * var(--scale)),
+    rgba(var(--bar-color), var(--bar-alpha)) calc(100% - calc(var(--fade-r, 112px) * var(--scale))),
+    rgba(var(--bar-color), 0) 100%);
+}
+
+.hud-bar {
+  /* 注意：--fade-r 必须带单位（px），否则 calc(100% - 数字) 非法，
+     整条 background 声明会被丢弃、底栏直接消失 */
+  position: absolute;
+  bottom: calc(var(--inset-y) + var(--offy, 0px));
+  height: var(--bar-h);
+  display: flex;
+  align-items: center;
+  /* 建立层叠上下文：红渐变 ::after 只能压在本底栏内部，
+     且必须低于模块内容（层级：底栏底色 → 红渐变 → 图标/槽 → 数值/填充） */
+  isolation: isolate;
+}
+
+.bar-left {
+  --fade-r: 112px;
+  padding-right: var(--bar-pad-r);
+  gap: calc(30px * var(--scale));
+}
+
+.bar-right {
+  left: auto;
+  right: 0;
+  padding-right: calc(var(--inset-x) - var(--offx, 0px) + var(--bar-pad-l));
+  padding-left: var(--bar-pad-r);
+  justify-content: flex-end;
+  background: linear-gradient(270deg,
+    rgba(var(--bar-color), 0) 0%,
+    rgba(var(--bar-color), var(--bar-alpha)) calc(84px * var(--scale)),
+    rgba(var(--bar-color), var(--bar-alpha)) calc(100% - calc(112px * var(--scale))),
+    rgba(var(--bar-color), 0) 100%);
+}
+
+/* 低血量预警：底栏左侧叠一层暗红渐变，向右消退 */
+.hud-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 170ms linear;
+  /* 淡入点要和底栏自身的羽化对齐，否则左边缘会露出一道色差 */
+  background: linear-gradient(90deg,
+    rgba(112, 15, 11, 0) 0,
+    rgba(112, 15, 11, calc(0.68 * (0.55 + 0.45 * var(--glow)))) calc(84px * var(--scale)),
+    rgba(104, 14, 10, calc(0.56 * (0.55 + 0.45 * var(--glow)))) calc(320px * var(--scale)),
+    rgba(96, 13, 9, calc(0.24 * (0.55 + 0.45 * var(--glow)))) calc(530px * var(--scale)),
+    rgba(90, 12, 8, 0) calc(740px * var(--scale)));
+}
+
+.bar-left.is-critical::after { opacity: 1; }
+
+/* ============================================================
+   组件开关
+   ============================================================ */
+[data-show].off { display: none !important; }
+
+/* ============================================================
+   每块 HUD 的独立位移 / 非等比缩放
+   锚点放在各模块靠近屏幕边缘的角上，缩放时不会把模块推离边缘。
+   位移在 scale 之前生效，所以位移量是屏幕像素、不随缩放变化。
+   ============================================================ */
+#bottomBar {
+  transform: translate(var(--m-vitals-x, 0px), var(--m-vitals-y, 0px))
+             rotate(var(--m-vitals-rot, 0deg))
+             scale(var(--m-vitals-sx, 1), var(--m-vitals-sy, 1));
+  transform-origin: bottom left;
+}
+
+#moneyModule {
+  transform: translate(var(--m-money-x, 0px), var(--m-money-y, 0px))
+             rotate(var(--m-money-rot, 0deg))
+             scale(var(--m-money-sx, 1), var(--m-money-sy, 1));
+  transform-origin: bottom left;
+}
+
+#rightBar {
+  transform: translate(var(--m-ammo-x, 0px), var(--m-ammo-y, 0px))
+             rotate(var(--m-ammo-rot, 0deg))
+             scale(var(--m-ammo-sx, 1), var(--m-ammo-sy, 1));
+  transform-origin: bottom right;
+}
+
+#weaponBar {
+  transform: translate(var(--m-weaponList-x, 0px), var(--m-weaponList-y, 0px))
+             rotate(var(--m-weaponList-rot, 0deg))
+             scale(var(--m-weaponList-sx, 1), var(--m-weaponList-sy, 1));
+  transform-origin: bottom right;
+}
+
+/* 武器栏默认不带描边；想开回来就设 hud.weaponTextOutline = true */
+.hud.woutline .slot .wtext,
+.hud.woutline .slot .wnum { text-shadow: var(--outline-text); }

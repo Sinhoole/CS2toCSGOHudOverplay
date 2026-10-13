@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>OverplayHUD</title>
-<link rel="stylesheet" href="hud.css">
+<!-- 样式表由 hud.js 按 hud-manifest.js 的 css 清单插入（顺序 = 层叠顺序） -->
 </head>
 <body>
 
@@ -201,9 +201,13 @@
 
 </div>
 
+<!-- 基础件：变量表 / 屏幕映射 / 进阶外观库 / 加载器 / 清单 / 引导。
+     具体加载什么全看清单，这个文件不随功能增减而改。 -->
 <script src="../vars.js"></script>
 <script src="../fit.js"></script>
 <script src="../advstyle.js"></script>
+<script src="../core/loader.js"></script>
+<script src="hud-manifest.js"></script>
 <script src="hud.js"></script>
 </body>
 </html>

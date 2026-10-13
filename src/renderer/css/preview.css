@@ -1,0 +1,107 @@
+/* ================================================================
+ * OverplayHUD · 预览模式（设置 → 预览 开的那个窗口）的顶部工具条
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* ============================================================
+   预览模式（设置 → 预览 开的那个窗口）
+   真实覆盖层没有 body.preview-mode，以下规则一条都不生效。
+   ============================================================ */
+
+/* 默认隐藏：真实 HUD 里这个工具条根本不该出现 */
+.preview-bar { display: none; }
+
+/* 整幅墨黑画框：把预览窗口裱成一块「印版」。纯装饰、不吃鼠标。 */
+body.preview-mode::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  border: 2px solid #111111;
+}
+
+/* ---- 工具条：报刊风（纸白底 + 2px 墨线 + 直角等宽按钮）----
+   注意：这里刻意不 @import 网络字体 —— hud.css 同时服务真实覆盖层，
+   不想为一根工具条让游戏内也去下载字体。用系统衬线/等宽兜底。 */
+body.preview-mode .preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 34px;
+  padding: 0 12px;
+  z-index: 50;
+  background: #F9F9F7;
+  border-bottom: 2px solid #111111;
+  font-family: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+  font-size: 11.5px;
+  color: #111111;
+  /* 窗口拉得再窄也不丢按钮：横向可滚，滚动条本身不显示 */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+body.preview-mode .preview-bar::-webkit-scrollbar { display: none; }
+
+/* 预览窗口本身可以随意缩放，光标/选择行为按桌面软件来 */
+body.preview-mode { -webkit-app-region: no-drag; }
+body.preview-mode .pv-tag,
+body.preview-mode .pv-lab,
+body.preview-mode .pv-note,
+body.preview-mode .pv-btn { user-select: none; }
+
+body.preview-mode .pv-tag {
+  flex: 0 0 auto;
+  font-family: 'Playfair Display', 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: -0.01em;
+  color: #111111;
+  margin-right: 4px;
+}
+
+body.preview-mode .pv-btn {
+  flex: 0 0 auto;
+  border: 1px solid #111111;
+  background: transparent;
+  color: #111111;
+  border-radius: 0;
+  padding: 3px 9px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: background .15s ease-out, color .15s ease-out;
+}
+body.preview-mode .pv-btn:hover { background: #111111; color: #F9F9F7; }
+body.preview-mode .pv-btn.on { background: #CC0000; border-color: #CC0000; color: #ffffff; }
+
+body.preview-mode .pv-sep {
+  flex: 0 0 auto;
+  width: 1px; height: 16px;
+  margin: 0 4px;
+  background: #111111;
+  opacity: .25;
+}
+
+body.preview-mode .pv-lab {
+  flex: 0 0 auto;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #737373;
+}
+body.preview-mode .pv-note {
+  margin-left: auto;
+  padding-left: 10px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  color: #737373;
+}

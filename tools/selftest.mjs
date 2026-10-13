@@ -44,6 +44,32 @@ function readTree(...dirs) {
   return out.join('\n/* ---- 文件分界 ---- */\n');
 }
 
+// HUD 渲染层重构后同样是「清单 + 多个模块」，按路径读单文件会随时失效。
+// ⚠️ hud.legacy.js / hud.css 是回退用的旧巨石（**不在清单里、不加载**），刻意排除在断言之外，
+//    否则断言会被死代码喂饱 —— 那是假绿。
+function readHud(kind) {
+  const files = [];
+  const scan = (abs) => {
+    if (!fsTop.existsSync(abs)) return;
+    for (const e of fsTop.readdirSync(abs, { withFileTypes: true })) {
+      const p = pathTop.join(abs, e.name);
+      if (e.isDirectory()) scan(p);
+      else if (kind === 'js' ? e.name.endsWith('.js') : e.name.endsWith('.css')) {
+        files.push(fsTop.readFileSync(p, 'utf8'));
+      }
+    }
+  };
+  scan(pathTop.join(ROOT, 'src/renderer/modules'));
+  scan(pathTop.join(ROOT, 'src/renderer/css'));
+  if (kind === 'js') {
+    for (const f of ['hud-env.js', 'hud-kit.js', 'hud-registry.js', 'hud-host.js',
+      'hud.js', 'hud-manifest.js']) {
+      files.push(fsTop.readFileSync(pathTop.join(ROOT, 'src/renderer', f), 'utf8'));
+    }
+  }
+  return files.join('\n/* ---- 文件分界 ---- */\n');
+}
+
 let pass = 0;
 let fail = 0;
 const check = (name, cond, extra = '') => {
@@ -687,8 +713,8 @@ console.log('\n[12] 实时预览（设置里开「模拟数据」窗口）');
   const root = path.join(import.meta.dirname, '..');
   const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
-  const hudCss = read('src/renderer/hud.css');
-  const hudJs = read('src/renderer/hud.js');
+  const hudCss = readHud('css');
+  const hudJs = readHud('js');
   const html = read('src/renderer/index.html');
   const preload = read('src/preload.js');
   const main = read('src/main.js');
@@ -817,7 +843,7 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   }
 
   // ---- 武器栏 SVG 态（与文字态并存、各自开关）----
-  const hudJs = read('src/renderer/hud.js');
+  const hudJs = readHud('js');
   check('武器栏文字态 section 改名后仍指向 module weaponList',
     /id: 'weaponListText'/.test(setJs) && /module: 'weaponList'/.test(setJs));
   check('设置侧有武器栏 SVG 态 section', /id: 'weaponListSvg'/.test(setJs));
@@ -875,7 +901,7 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   check('index.html 含 weaponBarSvg 容器', read('src/renderer/index.html').includes('id="weaponBarSvg"'));
 
   // ---- 武器栏 SVG 态：编号列对齐 / 1-3 左右镜像 / 每槽位辉光颜色 ----
-  const hudCss = read('src/renderer/hud.css');
+  const hudCss = readHud('css');
   check('DEFAULTS 含每槽位辉光颜色 glowColors(1..5)',
     !!DEF.modules.weaponList.svg.glowColors && DEF.modules.weaponList.svg.glowColors['5'] === '');
   check('右侧编号列对齐：槽位等宽(stretch)',
@@ -929,7 +955,7 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     && hudJs.includes("'--wl-svg-name-glow'") && hudJs.includes("'--wl-svg-name-glow-color'"));
   check('名称辉光关闭时半径压成 0；颜色留空时移除变量（触发 CSS 回退）',
     hudJs.includes('wls.nameGlow ?') && hudJs.includes(": '0px'")
-    && hudJs.includes("root.removeProperty('--wl-svg-name-glow-color')"));
+    && /removeProperty\('--wl-svg-name-glow-color'\)/.test(hudJs));
   check('applyModules 写出名称位置变量',
     hudJs.includes("'--wl-svg-name-dx'") && hudJs.includes("'--wl-svg-name-dy'"));
   check('设置页有名称位置/辉光/辉光颜色',

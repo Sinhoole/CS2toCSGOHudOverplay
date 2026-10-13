@@ -1,0 +1,156 @@
+/* ================================================================
+ * OverplayHUD · 血量 / 护甲 / 拆弹器（模块行 · 图标 · 进度条 · 血量分级）
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* ============================================================
+   模块：图标 → 数值 → 进度条
+   ============================================================ */
+.module {
+  position: relative;
+  z-index: 1;              /* 必须高于 .hud-bar::after 的红渐变 */
+  display: flex;
+  align-items: center;
+  gap: calc(16px * var(--scale));
+}
+
+.module .bar { margin-left: calc(12px * var(--scale)); }
+
+.module .val {
+  color: var(--white);
+  font-size: calc(58px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--shadow-text);
+}
+
+.module.health .val { min-width: calc(88px * var(--scale)); }
+.module.armor  .val { min-width: calc(68px * var(--scale)); }
+
+/* ---- 图标：浅灰填充 + 白色细描边 ---- */
+.ico {
+  display: block;
+  flex: none;
+  overflow: visible;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65));
+  transition: filter 140ms linear;
+}
+
+.ico path {
+  fill: var(--ico-fill);
+  stroke: var(--ico-stroke);
+  stroke-width: 1.9;
+  stroke-linejoin: round;
+  transition: fill 140ms linear, stroke 140ms linear;
+}
+
+.ico-health {
+  width: calc(34px * var(--scale));
+  height: calc(33px * var(--scale));
+}
+
+.ico-armor {
+  width: calc(34px * var(--scale));
+  height: calc(38px * var(--scale));
+}
+
+/* 头盔剪影：同色系但更亮一点，才看得出来 */
+.ico-armor .helmet {
+  fill: var(--ico-helmet);
+  stroke: none;
+  display: none;
+}
+
+.ico-armor.has-helmet .helmet { display: block; }
+
+/* ---- 进度条 ---- */
+.bar {
+  display: block;
+  width: calc(178px * var(--scale));
+  height: calc(20px * var(--scale));
+  border-radius: calc(2px * var(--scale));
+  border: calc(1px * var(--scale)) solid var(--bar-outline);
+  overflow: hidden;
+  transition: box-shadow 140ms linear, border-color 140ms linear;
+}
+
+.health-bar { background: var(--track-health); }
+.armor-bar  { background: var(--track-armor); }
+
+.bar > i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--white);
+  transition: width 120ms linear, background 120ms linear;
+}
+
+/* ============================================================
+   血量分级
+   ============================================================ */
+
+/* 中血量（<=50）：填充转红，图标略压暗，无发光 */
+.module.health.is-hurt .ico-health path { fill: rgba(232, 238, 242, 0.20); }
+.module.health.is-hurt .health-bar > i { background: var(--red); }
+
+/* 低血量（<=25）：红填充 + 红色外发光 */
+.module.health.is-critical .health-bar > i { background: var(--red); }
+
+.module.health.is-critical .ico-health path {
+  fill: #8E1A14;
+  stroke: rgba(255, 96, 78, 0.85);
+}
+
+/* 注意：辉光不写在这里。
+   Chromium 会把 calc() 嵌在 text-shadow / drop-shadow 里的整条声明判为无效
+   （同样是 calc，放进 box-shadow 却正常）。所以数字和十字图标的辉光由 hud.js
+   算好真实像素值后用内联样式注入，见 applyHealthGlow()。
+   这里只负责填充与描边的变色。 */
+
+.module.health.is-critical .health-bar {
+  border-color: rgba(255, 104, 86, 0.6);
+  box-shadow:
+    0 0 calc(9px * var(--scale)) rgba(var(--glow-rgb), calc(0.5 + 0.5 * var(--glow))),
+    0 0 calc(22px * var(--scale)) rgba(var(--glow-rgb), calc(0.24 + 0.46 * var(--glow)));
+}
+
+/* ============================================================
+   护甲：0 甲时保留整块，盾牌变灰、槽放空，无预警色无发光
+   ============================================================ */
+.module.armor.is-empty .ico-armor .shield {
+  fill: rgba(232, 238, 242, 0.20);
+  stroke: rgba(255, 255, 255, 0.62);
+}
+
+.module.armor.is-empty .val { color: rgba(243, 246, 248, 0.92); }
+
+/* ============================================================
+   拆弹器
+   ============================================================ */
+.module.kit { opacity: 0.95; }
+
+.ico-kit {
+  position: relative;
+  display: block;
+  width: calc(30px * var(--scale));
+  height: calc(24px * var(--scale));
+  border: calc(2px * var(--scale)) solid rgba(255, 255, 255, 0.85);
+  border-radius: calc(3px * var(--scale));
+  background: rgba(232, 238, 242, 0.28);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65));
+}
+
+.ico-kit::after {
+  content: "";
+  position: absolute;
+  right: calc(-3px * var(--scale));
+  top: calc(5px * var(--scale));
+  width: calc(11px * var(--scale));
+  height: calc(5px * var(--scale));
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: calc(1px * var(--scale));
+}

@@ -1,0 +1,84 @@
+/* ================================================================
+ * OverplayHUD · 金钱模块（左侧信息组，位于血量护甲底栏上方）
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* ============================================================
+   金钱模块（左侧信息组，位于血量护甲底栏上方，左边缘与之一条直线）
+
+   三行结构，常态只显示中间那行：
+     奖励行（绿，在上）  ← 击杀奖励 / 收入
+     主金额（白，居中）
+     扣除行（红，在下）  ← 购买支出
+   底栏高度随行数线性过渡。
+   ============================================================ */
+.money-module {
+  --fade-r: 56px;
+  bottom: calc(var(--bar-h) + var(--inset-y) + var(--offy, 0px) + calc(10px * var(--scale)));
+  padding-right: calc(58px * var(--scale));
+  padding-top: calc(11px * var(--scale));
+  padding-bottom: calc(11px * var(--scale));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(3px * var(--scale));
+  isolation: isolate;
+}
+
+.money-line {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;      /* $ 与数字底部基线齐平 */
+  white-space: nowrap;
+  color: var(--white);
+  text-shadow: var(--shadow-text);
+  font-size: calc(46px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 符号与数字同字号同色，确保基线齐平、宽度均匀 */
+.money-line .sym { font-size: inherit; }
+
+.money-line.delta { font-size: calc(38px * var(--scale)); }
+
+.money-line.reward { color: var(--money-gain); }
+.money-line.spend  { color: var(--money-spend); }
+
+/* 行高折叠动画：0fr → 1fr 让底栏高度平滑过渡，不会生硬跳变 */
+.line-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 170ms linear;
+}
+
+.line-wrap.is-on { grid-template-rows: 1fr; }
+
+.line-wrap > .money-line {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* 附加行动效：出现淡入 + 轻微位移，停留后淡出（无发光，纯色区分状态） */
+.money-line.delta {
+  opacity: 0;
+  transition: opacity 240ms linear, transform 240ms ease-out;
+}
+
+.money-line.reward { transform: translateY(9px); }
+.money-line.spend  { transform: translateY(-6px); }
+
+.money-line.delta.is-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 120ms linear,
+              transform 230ms cubic-bezier(0.22, 0.9, 0.32, 1.25);  /* 轻微回弹 */
+}
+
+.money-line.delta.is-out { opacity: 0; }
+.money-line.spend.is-out  { transform: translateY(8px); }
+.money-line.reward.is-out { transform: translateY(6px); }

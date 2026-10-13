@@ -1,0 +1,114 @@
+/* ================================================================
+ * OverplayHUD · 击杀 / 死亡播报 + 播报的进阶外观
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* ============================================================
+   击杀 / 死亡播报
+   同一帧只播一条，优先级 连杀 > 击杀 > 阵亡 > 助攻 > MVP，
+   免得一次三杀同时弹四条把画面塞满。
+   ============================================================ */
+.event-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.ev-item {
+  position: absolute;
+  font-size: calc(var(--ev-size, 30px) * var(--scale));
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--ev-color, #FFFFFF);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(2px * var(--scale)) calc(7px * var(--scale)) rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  filter: brightness(1.5);
+  transition: opacity var(--ev-fade, 240ms) ease, filter var(--ev-fade, 240ms) ease;
+}
+
+/* 出现瞬间亮一下再回落，比单纯淡入更"抓住眼睛" */
+.ev-item.is-on {
+  opacity: 1;
+  filter: brightness(1);
+}
+
+/* ---- 9 个锚点（和自定义文本元素同一套约定）---- */
+.ev-item.a-tl { left: calc(var(--inset-x, 0px) + var(--ev-x, 0px)); top: calc(var(--inset-y, 0px) + var(--ev-y, 0px)); }
+.ev-item.a-tr { right: calc(var(--inset-x, 0px) - var(--ev-x, 0px)); top: calc(var(--inset-y, 0px) + var(--ev-y, 0px)); }
+.ev-item.a-tc {
+  left: calc(50% + var(--ev-x, 0px));
+  top: calc(var(--inset-y, 0px) + var(--ev-y, 0px));
+  transform: translateX(-50%);
+}
+
+.ev-item.a-ml {
+  left: calc(var(--inset-x, 0px) + var(--ev-x, 0px));
+  top: calc(50% + var(--ev-y, 0px));
+  transform: translateY(-50%);
+}
+.ev-item.a-mc {
+  left: calc(50% + var(--ev-x, 0px));
+  top: calc(50% + var(--ev-y, 0px));
+  transform: translate(-50%, -50%);
+}
+.ev-item.a-mr {
+  right: calc(var(--inset-x, 0px) - var(--ev-x, 0px));
+  top: calc(50% + var(--ev-y, 0px));
+  transform: translateY(-50%);
+}
+
+.ev-item.a-bl { left: calc(var(--inset-x, 0px) + var(--ev-x, 0px)); bottom: calc(var(--inset-y, 0px) - var(--ev-y, 0px)); }
+.ev-item.a-br { right: calc(var(--inset-x, 0px) - var(--ev-x, 0px)); bottom: calc(var(--inset-y, 0px) - var(--ev-y, 0px)); }
+.ev-item.a-bc {
+  left: calc(50% + var(--ev-x, 0px));
+  bottom: calc(var(--inset-y, 0px) - var(--ev-y, 0px));
+  transform: translateX(-50%);
+}
+
+/* ============================================================
+   进阶外观（config.adv.enabled 打开时才有；关闭时这些类不会出现在 DOM 上）
+   —— 图标 / 字重字距 / 斜体 / 描边 / 弯曲。入场、脉冲、抖动、震动走 WAAPI，见 hud.js。
+   ============================================================ */
+.ev-item.ev-adv {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ev-gap, 10px);
+  font-weight: var(--ev-weight, 700);
+  letter-spacing: var(--ev-ls, 0.06em);
+  transition: none;          /* 进阶路径用 WAAPI，关掉 CSS 过渡以免两边打架 */
+  filter: none;
+}
+
+.ev-item.ev-adv.ev-italic { font-style: italic; }
+.ev-item.ev-adv.ev-ico-right { flex-direction: row-reverse; }
+
+.ev-item.ev-adv .ev-ico {
+  font-size: calc(1em * var(--ev-icon-size, 1));
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.ev-item.ev-adv .ev-curve {
+  display: block;
+  overflow: visible;
+  flex: 0 0 auto;
+}
+.ev-item.ev-adv .ev-curve text { font-family: inherit; }
+
+/* 深色描边：用 stroke + paint-order=stroke 让描边压在填充下面，字不会变细 */
+.ev-item.ev-adv.ev-outline .ev-txt,
+.ev-item.ev-adv.ev-outline .ev-ico {
+  -webkit-text-stroke: var(--ev-ol-w, 2px) var(--ev-ol-c, #000000);
+  paint-order: stroke fill;
+}
+
+/* 自定义图标（来自图标库）：SVG 或图片，都按 1em 高度对齐文字 */
+.ev-item.ev-adv .ev-ico-svg { display: inline-flex; align-items: center; }
+.ev-item.ev-adv .ev-ico-svg svg { height: calc(1em * var(--ev-icon-size, 1)); width: auto; display: block; }
+.ev-item.ev-adv .ev-ico-img { height: calc(1em * var(--ev-icon-size, 1)); width: auto; object-fit: contain; }

@@ -1,0 +1,201 @@
+/* ================================================================
+ * OverplayHUD · 顶部比分面板（CT 存活 | 时间+比分 | T 存活）
+ *
+ * 由 src/renderer/hud.css（重构前单文件，1411 行）机械拆分而来，规则原样保留。
+ * 层叠顺序由 src/renderer/hud-manifest.js 的 css 数组决定，挪动前先读那里的注释。
+ * ================================================================ */
+
+/* ============================================================
+   顶部比分面板
+   三栏对称：CT块 | 时间+比分块 | T块
+   实心色块 + 硬边。块面质感靠「顶部一线高光 + 底部压暗 + 细内描边 + 轻微外投影」，
+   不用大半径内阴影（那会把色块糊成渐变，显得脏）。
+   ============================================================ */
+.top {
+  position: absolute;
+  top: var(--inset-y);
+  left: 50%;
+  transform: translateX(-50%)
+             translate(var(--m-scoreboard-x, 0px), var(--m-scoreboard-y, 0px))
+             rotate(var(--m-scoreboard-rot, 0deg))
+             scale(var(--m-scoreboard-sx, 1), var(--m-scoreboard-sy, 1));
+  transform-origin: top center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scoreboard {
+  display: flex;
+  align-items: stretch;
+  height: calc(84px * var(--scale));
+}
+
+/* 平面化：纯色块 + 近黑分隔缝，不做高光 / 暗角 / 投影（不需要拟物感） */
+.team-block,
+.center-block {
+  box-shadow: none;
+}
+
+.team-block {
+  position: relative;
+  width: calc(102px * var(--scale));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.team-block.ct { background-color: var(--ct-block, #1F4A78); }   /* 冷色系蓝 */
+.team-block.t  { background-color: var(--t-block, #C8A63C); }   /* 暖色系金 */
+
+/* 阵营徽记：亮的，铺满色块，压在文字之下 */
+.team-block .mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(88px * var(--scale));
+  height: calc(56px * var(--scale));
+  transform: translate(-50%, -54%);
+  pointer-events: none;
+}
+
+.team-block.ct .mark { color: rgba(150, 216, 255, 0.55); }
+.team-block.t  .mark { color: rgba(255, 238, 168, 0.70); }
+
+.hud.mark-off .mark { display: none; }
+
+.team-block .alive {
+  position: relative;
+  z-index: 1;
+  color: var(--white);
+  font-size: calc(40px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(1px * var(--scale)) calc(3px * var(--scale)) rgba(0, 0, 0, 0.75);
+  transition: opacity 180ms linear;
+}
+
+.team-block .alive.dim { opacity: 0.35; transition: opacity 0ms; }
+
+/* 「存活」跟随阵营色 */
+.team-block .label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(4px * var(--scale));
+  display: none;
+  text-align: center;
+  font-size: calc(15px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-shadow: 0 calc(1px * var(--scale)) calc(2px * var(--scale)) rgba(0, 0, 0, 0.7);
+}
+
+.team-block.ct .label { color: #8FD4FF; }
+.team-block.t  .label { color: #6B5410; }
+
+.team-block.show-count .alive { font-size: calc(50px * var(--scale)); letter-spacing: 0; }
+.team-block.show-count .label { display: block; }
+
+/* ---- 中间时间 + 比分块 ---- */
+.center-block {
+  width: calc(178px * var(--scale));
+  display: flex;
+  flex-direction: column;
+  background-color: var(--center-block, #1C1E22);
+  border-left: calc(3px * var(--scale)) solid #0B0C0E;
+  border-right: calc(3px * var(--scale)) solid #0B0C0E;
+}
+
+.time-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6px * var(--scale));
+  border-bottom: calc(3px * var(--scale)) solid #0B0C0E;
+}
+
+.time {
+  color: var(--white);
+  font-size: calc(33px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(2px * var(--scale)) calc(3px * var(--scale)) rgba(0, 0, 0, 0.55);
+  transition: color 140ms linear;
+}
+
+.time-cell.empty .time,
+.time-cell.empty .ico-bomb { visibility: hidden; }
+
+.time-cell.is-bomb .time,
+.time-cell.is-low  .time { color: #FF4A3C; }
+.time-cell.is-freeze .time { color: rgba(243, 246, 248, 0.72); }
+
+.ico-bomb {
+  position: relative;
+  display: none;
+  width: calc(15px * var(--scale));
+  height: calc(15px * var(--scale));
+  border-radius: calc(3px * var(--scale));
+  background: #FF4A3C;
+}
+
+.time-cell.is-bomb .ico-bomb { display: block; }
+
+.ico-bomb::after {
+  content: "";
+  position: absolute;
+  top: calc(3px * var(--scale));
+  left: calc(3px * var(--scale));
+  width: calc(4px * var(--scale));
+  height: calc(4px * var(--scale));
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* ---- 下半格：双方比分 ---- */
+.score-cells {
+  flex: 1;
+  display: flex;
+  background-color: #0B0C0E;
+}
+
+.score-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.score-cell.ct {
+  background-color: #23262C;
+  border-right: calc(3px * var(--scale)) solid #0B0C0E;
+}
+
+.score-cell.t {
+  background-color: #4C4A22;
+}
+
+.score {
+  font-size: calc(28px * var(--scale));
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(2px * var(--scale)) calc(3px * var(--scale)) rgba(0, 0, 0, 0.5);
+  transition: transform 130ms ease-out, filter 130ms ease-out;
+}
+
+.score-cell.ct .score { color: #DCE0F0; }   /* 浅蓝，对应 CT 冷色 */
+.score-cell.t  .score { color: #F2C63C; }   /* 浅黄，对应 T 暖色 */
+
+/* 比分变化的强调：一帧放大提亮 */
+.score.bump {
+  transform: scale(1.3);
+  filter: brightness(1.55);
+}
