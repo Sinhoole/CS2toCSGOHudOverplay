@@ -833,6 +833,8 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     !!DEF.modules.weaponList.svg.glowColors && DEF.modules.weaponList.svg.glowColors['5'] === '');
   check('右侧编号列对齐：槽位等宽(stretch)',
     /\.weapon-bar-svg \{[^}]*align-items: stretch/.test(hudCss));
+  check('武器图标右对齐、往左排列',
+    /\.weapon-bar-svg \.slot \{[^}]*justify-content: flex-end/.test(hudCss));
   check('右侧编号列对齐：编号统一右缘',
     /\.weapon-bar-svg \.wnum \{[^}]*right: calc\(-26px/.test(hudCss));
   check('1/2/3 号槽位图标左右镜像',

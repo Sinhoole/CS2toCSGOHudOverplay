@@ -809,7 +809,7 @@ body { user-select: none; cursor: default; }
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;   /* 图标右对齐，往左排列（宽的在左、窄的齐右） */
   min-height: calc(36px * var(--scale));
 }
 /* 1 / 2 / 3 号槽位图标左右镜像（步枪·手枪·刀 朝向翻转）；4、5 号不镜像 */
