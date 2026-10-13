@@ -861,6 +861,18 @@ body { user-select: none; cursor: default; }
 }
 .weapon-bar-svg .slot.empty { display: none; }
 
+/* 4 号槽位（投掷物）是「一排图标」，名称放下面会贴在最后一颗底下、看着像在标它。
+   这一行改成横排：图标在左、名称在右，整体仍然贴右缘。 */
+.weapon-bar-svg .slot[data-slot="4"] {
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+}
+.weapon-bar-svg .slot[data-slot="4"] .wl-name {
+  margin-top: 0;
+  margin-left: calc(7px * var(--scale));
+}
+
 /* ---- 行内名称（在图标「下方」，跟着图标右缘对齐） ----
    注意：它是 .slot 的直接子元素、不在 .ico 里 ——
    1) 不受 1/2/3 号槽位的镜像 transform 影响，文字不会反；

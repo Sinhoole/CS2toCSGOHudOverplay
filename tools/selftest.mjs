@@ -891,6 +891,9 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     /\.weapon-bar-svg \.wl-name \{[^}]*font-size: calc\(var\(--wl-svg-name-size, 13px\) \* var\(--scale\)\)/.test(hudCss));
   check('名称参与布局（在图标下方，不是浮在行距上）',
     /\.weapon-bar-svg \.wl-name \{[^}]*margin-top:/.test(hudCss));
+  check('投掷物行的名称在「右侧」（横排），不贴最后一颗底下',
+    /\.weapon-bar-svg \.slot\[data-slot="4"\] \{[^}]*flex-direction: row/.test(hudCss)
+    && /\.slot\[data-slot="4"\] \.wl-name \{[^}]*margin-left:/.test(hudCss));
   check('名称在 .ico 之外（不被 1/2/3 的镜像 transform 翻转）',
     /<div class="ico"><\/div><span class="wl-name"><\/span>/.test(read('src/renderer/index.html')));
   check('HUD 渲染层读 showName / slotNames / names / labels',
