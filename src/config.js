@@ -97,6 +97,14 @@ const DEFAULTS = {
       offsetX: 0, offsetY: 0, scaleX: 1, scaleY: 1,
       rotate: 0, opacity: 1, glow: 0, glowColor: '#FFFFFF',
       barColor: '#0E131A', barAlpha: 0.5,
+      // ---- 击杀栏（连杀骷髅）独立定位 ----
+      // 与子弹栏互不影响：位置走 transform: translate、大小走 transform: scale，
+      // 都不参与布局 → 调击杀栏不会挤动子弹栏，调子弹栏也不会带动击杀栏。
+      // 未持枪时子弹栏只是看不见（保留占位），击杀栏位置因此完全不动。
+      // 默认值 = 重构前写死的值，不动就等于没改。
+      killsOffsetX: 0,       // 击杀栏位置微调 X（px），负值向左
+      killsOffsetY: 0,       // 击杀栏位置微调 Y（px），负值向上
+      killsScale: 1,         // 击杀栏整体大小（倍数，含图标与间距）
     },
     weaponList: {
       offsetX: 0, offsetY: 0, scaleX: 1, scaleY: 1,

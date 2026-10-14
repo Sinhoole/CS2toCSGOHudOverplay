@@ -1036,6 +1036,37 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     setJs.includes("path: base + '.numSize'") && setJs.includes("path: base + '.numOffsetX'")
     && setJs.includes("path: base + '.numOffsetY'"));
 
+  // ---- 右下：子弹栏与击杀栏相互独立 ----
+  check('DEFAULTS 含击杀栏位置与大小（offset 0 · scale 1）',
+    DEF.modules.ammo.killsOffsetX === 0 && DEF.modules.ammo.killsOffsetY === 0
+    && DEF.modules.ammo.killsScale === 1);
+  check('击杀栏位置与缩放走 transform（不参与布局 → 不挤动弹匣/备弹/子弹）',
+    /\.kills \{[^}]*transform: translate\(var\(--kills-dx, 0px\), var\(--kills-dy, 0px\)\)[^}]*scale\(var\(--kills-scale, 1\)\)/.test(hudCss));
+  check('击杀栏以右下角为原点（放大会向左上展开，不盖住子弹栏也不顶出屏幕）',
+    /\.kills \{[^}]*transform-origin: right bottom/.test(hudCss));
+  check('未持枪时子弹栏保留占位（visibility）→ 击杀栏不会跟着滑动',
+    /\.ammo-block\.gun-off \.clipwrap,[\s\S]{0,80}visibility: hidden/.test(hudCss)
+    && !/\.ammo-block\.gun-off[^{]*\{[^}]*display: none/.test(hudCss));
+  check('未持枪判定走独立的 gun-off 类，与开关用的 .off 分开（互不覆盖）',
+    hudJs.includes("classList.toggle('gun-off'") && !hudJs.includes("clipWrap.classList.add('off')"));
+  check('弹药开关同时管住弹匣与子弹装饰（原来是只关弹匣、子弹还留着）',
+    (read('src/renderer/index.html').match(/data-show="ammo"/g) || []).length === 2);
+  check('保留占位的容器有 id（渲染层按它切 gun-off）',
+    read('src/renderer/index.html').includes('class="ammo-block" id="ammoBlock"'));
+  check('渲染层写入击杀栏的 3 个变量',
+    hudJs.includes("'--kills-dx'") && hudJs.includes("'--kills-dy'") && hudJs.includes("'--kills-scale'"));
+  check('设置页有击杀栏位置与大小控件',
+    setJs.includes('modules.ammo.killsOffsetX') && setJs.includes('modules.ammo.killsOffsetY')
+    && setJs.includes('modules.ammo.killsScale'));
+  check('新徽章出场动画：自下弹入 + 放大回弹 + 摆正',
+    /@keyframes badge-in \{[\s\S]*?translateY\(26%\) scale\(0\.45\) rotate\(-16deg\)[\s\S]*?scale\(1\.16\)/.test(hudCss));
+  check('动画只挂在新增那一枚上（已存在的保持静止）',
+    /\.badge\.on\.fresh \{[^}]*animation: badge-in/.test(hudCss));
+  check('徽章绕底边缩放旋转（弹入的原点）',
+    /\.badge \{[^}]*transform-origin: 50% 100%/.test(hudCss));
+  check('减少动态偏好下关闭徽章动画',
+    /prefers-reduced-motion[^{]*\{[\s\S]*?\.badge\.on\.fresh \{ animation: none/.test(hudCss));
+
   // ---- 剪影颜色（默认 + 每槽位独立）----
   check('DEFAULTS 含每槽位剪影颜色 colors(1..5)',
     !!DEF.modules.weaponList.svg.colors && DEF.modules.weaponList.svg.colors['5'] === '');

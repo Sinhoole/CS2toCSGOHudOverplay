@@ -59,6 +59,16 @@ function applyModules(cfg) {
     if (m.barAlpha != null) el.style.setProperty('--bar-alpha', String(n(m.barAlpha, 0.5)));
   }
 
+  // ---- 击杀栏（连杀骷髅）：独立的位置与大小 ----
+  // 变量写在元素自己身上，不与子弹栏共用任何东西 —— 两栏的位移/缩放互不影响。
+  const am = M.ammo || {};
+  if (C.nodes.killsBlock) {
+    const ks = C.nodes.killsBlock.style;
+    ks.setProperty('--kills-dx', `${n(am.killsOffsetX, 0)}px`);
+    ks.setProperty('--kills-dy', `${n(am.killsOffsetY, 0)}px`);
+    ks.setProperty('--kills-scale', String(n(am.killsScale, 1)));
+  }
+
   const wb = M.weaponList || {};
   if (C.nodes.weaponBar) {
     if (wb.textColor) C.nodes.weaponBar.style.setProperty('--wtext-color', wb.textColor);

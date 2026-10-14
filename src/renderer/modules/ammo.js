@@ -16,11 +16,16 @@
   /** 每帧渲染：快照到达时由宿主分发调用 */
   function render(s) {
   // ---- 弹药 ----
+  // 未持枪（空手 / 只有刀）时子弹栏隐去，但只是「看不见」，占位仍在（见 ammo.css 的
+  // .gun-off），所以右边的击杀栏不会跟着滑动 —— 两栏相互独立。
+  //
+  // ⚠️ 这里只挂 gun-off，绝不碰 .off：.off 归配置开关（data-show="ammo"）所有，
+  //    两边都 toggle 同一个类会互相覆盖，结果是「关掉弹药开关后又自己冒出来」。
   const w = s.weapon;
-  if (!w || w.clip == null) {
-    C.nodes.clipWrap.classList.add('off');
-  } else {
-    C.nodes.clipWrap.classList.remove('off');
+  const hasGun = !!w && w.clip != null;
+  if (C.nodes.ammoBlock) C.nodes.ammoBlock.classList.toggle('gun-off', !hasGun);
+
+  if (hasGun) {
     C.nodes.clip.textContent = w.clip;
     C.nodes.reserve.textContent = w.reserve == null ? '' : w.reserve;
     C.nodes.clip.classList.toggle('is-empty', w.clip === 0);   // 空弹匣转红

@@ -67,8 +67,15 @@
       { label: '羽化底栏不透明度', path: 'modules.ammo.barAlpha' },
     ],
     fields: [
-      { type: 'switch', label: '显示弹药',   path: 'show.ammo' },
+      { type: 'switch', label: '显示弹药',   path: 'show.ammo',
+        note: '含弹匣、备弹与子弹装饰。未持枪（空手或只拿刀）时自动隐去，击杀栏位置不受影响。' },
       { type: 'switch', label: '显示连杀',   path: 'show.roundKills' },
+      { type: 'num',    label: '击杀栏位置 X', path: 'modules.ammo.killsOffsetX', min: -400, max: 400, step: 1, unit: 'px',
+        note: '连杀骷髅相对默认位置的横向微调，负值向左。与子弹栏各自独立，允许重叠。' },
+      { type: 'num',    label: '击杀栏位置 Y', path: 'modules.ammo.killsOffsetY', min: -400, max: 400, step: 1, unit: 'px',
+        note: '负值向上。' },
+      { type: 'num',    label: '击杀栏大小',   path: 'modules.ammo.killsScale', min: 0.3, max: 3, step: 0.01, unit: '×',
+        note: '整块骷髅等比缩放，以右下角为原点向左上展开，不会顶出屏幕。' },
     ],
   });
 

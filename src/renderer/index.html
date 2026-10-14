@@ -162,7 +162,7 @@
 
   <!-- ===== 右下：连杀骷髅 + 弹药 ===== -->
   <div class="hud-bar bar-right hud-strip" id="rightBar">
-    <div class="ammo-block">
+    <div class="ammo-block" id="ammoBlock">
 
       <span class="kills" data-show="roundKills" id="killsBlock">
         <svg class="badge" viewBox="0 0 30 36"><use href="#sym-badge"/></svg>
@@ -176,7 +176,7 @@
         <span class="clip" id="clip">30</span><span class="slash">/</span><span class="reserve" id="reserve">90</span>
       </span>
 
-      <span class="bullets" aria-hidden="true">
+      <span class="bullets" data-show="ammo" aria-hidden="true" id="bulletsBox">
         <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
         <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
         <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>

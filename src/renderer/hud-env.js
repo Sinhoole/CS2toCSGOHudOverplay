@@ -55,6 +55,7 @@
     clipWrap: $('clipWrap'),
     clip: $('clip'),
     reserve: $('reserve'),
+    ammoBlock: $('ammoBlock'),
     killsBlock: $('killsBlock'),
     roundKills: $('roundKills'),
     money: $('money'),

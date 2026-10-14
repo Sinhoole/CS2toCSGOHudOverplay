@@ -25,28 +25,43 @@
 }
 
 /* ---- 连杀骷髅徽章：每击杀 1 人新增 1 枚，最多 5 枚 ---- */
+/* 击杀栏与子弹栏相互独立：这里的 transform 只改绘制位置，不参与布局，
+   所以挪击杀栏不会挤动右侧的弹匣/备弹/子弹，反向同理，两者允许重叠。
+   原点取右下角 —— 放大时向左上展开，既不会盖住子弹栏也不会顶出屏幕。 */
 .kills {
   display: flex;
   align-items: flex-end;
   gap: calc(1px * var(--scale));
+  transform: translate(var(--kills-dx, 0px), var(--kills-dy, 0px))
+             scale(var(--kills-scale, 1));
+  transform-origin: right bottom;
 }
+
+/* 未持枪（含空手与刀）：子弹栏隐去但保留占位，击杀栏因此纹丝不动。
+   用 visibility 而不是 display —— display: none 会让 .ammo-block 收缩，
+   右对齐的击杀栏就会滑到最右边（这正是「两栏没独立」的表现）。 */
+.ammo-block.gun-off .clipwrap,
+.ammo-block.gun-off .bullets { visibility: hidden; }
 
 .badge {
   display: none;
   width: calc(30px * var(--scale));
   height: calc(35px * var(--scale));
+  transform-origin: 50% 100%;   /* 从底边弹出、绕底边旋转 */
 }
 
 .badge.on { display: block; }
 
-/* 新徽章：0.2 秒淡入 + 轻微放大回弹；已存在的徽章保持静止 */
+/* 新徽章：自下弹入 + 放大回弹 + 轻微摆正；已存在的徽章保持静止 */
 .badge.on.fresh {
-  animation: badge-in 200ms cubic-bezier(0.2, 0.9, 0.3, 1.35) both;
+  animation: badge-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes badge-in {
-  0%   { opacity: 0; transform: scale(0.65); }
-  100% { opacity: 1; transform: scale(1); }
+  0%   { opacity: 0; transform: translateY(26%) scale(0.45) rotate(-16deg); }
+  55%  { opacity: 1; transform: translateY(0) scale(1.16) rotate(4deg); }
+  78%  { transform: translateY(0) scale(0.96) rotate(-1.5deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
