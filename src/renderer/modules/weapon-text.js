@@ -28,6 +28,7 @@ function renderWeaponBar(s) {
   const list = s.slots || [];
 
   slotEls.forEach((el, i) => {
+    applyTextMetrics(el);
     const info = list[i];
     const isGrenade = info && info.slot === 4;
     const empty = !info || (isGrenade ? (info.chars || []).length === 0 : !info.label);
@@ -43,6 +44,27 @@ function renderWeaponBar(s) {
       textEl.textContent = empty ? '' : K.weaponLabel(info);
     }
   });
+}
+
+/**
+ * 武器名与编号各自的字号 / 位置（文字态）。
+ *
+ * 位置一律走 CSS 变量 → `transform: translate`，不参与布局，所以：
+ *   · 调武器名的位置不会推挤右侧编号，调编号也不会推挤武器名；
+ *   · 两者可以随意重叠（想叠就叠，不会被自动排开）。
+ * 值没变就不重写（dataset 签名比对），避免每帧都碰 style。
+ */
+function applyTextMetrics(el) {
+  const wl = (C.currentCfg.modules && C.currentCfg.modules.weaponList) || {};
+  const sig = `${wl.textSize}|${wl.textOffsetX}|${wl.textOffsetY}|${wl.numSize}|${wl.numOffsetX}|${wl.numOffsetY}`;
+  if (el.dataset.txtMetrics === sig) return;
+  el.dataset.txtMetrics = sig;
+  K.setPxVar(el, '--wl-text-size', wl.textSize, 42);   // 武器名字号（投掷物行取 2/3）
+  K.setPxVar(el, '--wl-text-dx', wl.textOffsetX, 0);
+  K.setPxVar(el, '--wl-text-dy', wl.textOffsetY, 0);
+  K.setPxVar(el, '--wl-num-size', wl.numSize, 22);     // 编号字号
+  K.setPxVar(el, '--wl-num-dx', wl.numOffsetX, 0);
+  K.setPxVar(el, '--wl-num-dy', wl.numOffsetY, 0);
 }
 
 /**

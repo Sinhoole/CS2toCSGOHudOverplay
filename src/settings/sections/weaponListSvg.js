@@ -149,11 +149,11 @@ function buildWeaponListSvgCard() {
     field.append(el('div', 'note', '仅显示当前手持的那一件；投掷物行只显示手持那一颗的名称。'));
     nameBody.append(field);
   }
-  nameBody.append(fieldRow('名称字号', numControl({ type: 'num', label: '名称字号', path: base + '.nameSize', min: 8, max: 28, step: 1, unit: 'px' })));
+  nameBody.append(fieldRow('名称字号', numControl({ type: 'num', label: '名称字号', path: base + '.nameSize', min: 8, max: 60, step: 1, unit: 'px' })));
   nameBody.append(fieldRow('名称颜色', colorControl({ type: 'color', label: '名称颜色', path: base + '.nameColor', fallback: '#FFFFFF' })));
-  nameBody.append(fieldRow('名称位置 X', numControl({ type: 'num', label: '名称位置 X', path: base + '.nameOffsetX', min: -100, max: 100, step: 1, unit: 'px' }),
-    '在默认位置基础上微调；单图标栏默认在图标下方，投掷物行默认在手持那一颗下方。'));
-  nameBody.append(fieldRow('名称位置 Y', numControl({ type: 'num', label: '名称位置 Y', path: base + '.nameOffsetY', min: -100, max: 100, step: 1, unit: 'px' }),
+  nameBody.append(fieldRow('名称位置 X', numControl({ type: 'num', label: '名称位置 X', path: base + '.nameOffsetX', min: -300, max: 300, step: 1, unit: 'px' }),
+    '在默认位置基础上微调；单图标栏默认在图标下方，投掷物行默认在手持那一颗下方。位置微调不参与布局，不会挤动编号或其他槽位。'));
+  nameBody.append(fieldRow('名称位置 Y', numControl({ type: 'num', label: '名称位置 Y', path: base + '.nameOffsetY', min: -300, max: 300, step: 1, unit: 'px' }),
     '负值向上，正值向下。'));
   {
     const f = { type: 'switch', label: '名称辉光', path: base + '.nameGlow' };
@@ -179,6 +179,26 @@ function buildWeaponListSvgCard() {
   }
   nameCard.append(nameBody);
   wrap.append(nameCard);
+
+  // ---- 编号大小与位置（右侧 1～5 号数字）----
+  // 和「名称」完全对称的两组键：各调各的、互不影响，位置都走 transform，允许重叠。
+  const numCard = el('div', 'card');
+  const numHead = el('div', 'card-head');
+  {
+    const box = el('div');
+    box.append(el('div', 'card-title', '编号大小与位置'));
+    box.append(el('div', 'card-hint', '右侧 1～5 号数字的字号与位置。与「名称」各自独立定位，可以重叠。'));
+    numHead.append(box);
+  }
+  numCard.append(numHead);
+  const numBody = el('div', 'card-body');
+  numBody.append(fieldRow('编号字号', numControl({ type: 'num', label: '编号字号', path: base + '.numSize', min: 8, max: 60, step: 1, unit: 'px' })));
+  numBody.append(fieldRow('编号位置 X', numControl({ type: 'num', label: '编号位置 X', path: base + '.numOffsetX', min: -300, max: 300, step: 1, unit: 'px' }),
+    '负值向左，正值向右。位置微调不参与布局，不会挤动图标与名称。'));
+  numBody.append(fieldRow('编号位置 Y', numControl({ type: 'num', label: '编号位置 Y', path: base + '.numOffsetY', min: -300, max: 300, step: 1, unit: 'px' }),
+    '负值向上，正值向下。'));
+  numCard.append(numBody);
+  wrap.append(numCard);
 
   // ---- 槽位图标覆盖 ----
   const slotCard = el('div', 'card');

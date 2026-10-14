@@ -28,27 +28,34 @@
   min-height: calc(30px * var(--scale));
 }
 
-/* 状态 2：已拥有但未手持 —— 中灰、常规字重、约 60% 透明度 */
+/* 状态 2：已拥有但未手持 —— 中灰、常规字重、约 60% 透明度。
+   字号与位置都是可调项（--wl-text-size / --wl-text-dx / --wl-text-dy）；
+   ⚠️ 位置走 transform —— 不参与布局，所以挪动武器名不会推挤右侧编号，
+      两者可以随意重叠。想改默认位置请改 config.js，别在这里写死。 */
 .slot .wtext {
-  font-size: calc(42px * var(--scale));
+  font-size: calc(var(--wl-text-size, 42px) * var(--scale));
   font-weight: 400;
   line-height: 1;
   color: var(--wtext-dim, rgba(242, 245, 247, 0.6));
   transition: color 150ms linear;
+  transform: translate(var(--wl-text-dx, 0px), var(--wl-text-dy, 0px));
 }
 
-/* 投掷物单字：约主武器的 2/3 */
-.slot[data-slot="4"] .wtext { font-size: calc(28px * var(--scale)); }
+/* 投掷物单字：约主武器的 2/3（跟着武器名字号一起缩放） */
+.slot[data-slot="4"] .wtext { font-size: calc(var(--wl-text-size, 42px) * 2 / 3 * var(--scale)); }
 
-/* 编号做成固定宽度的右对齐列，逐行叠成一条整齐的竖线，与左侧文字同基线 */
+/* 编号做成固定宽度的右对齐列，逐行叠成一条整齐的竖线，与左侧文字同基线。
+   字号与位置独立可调（--wl-num-size / --wl-num-dx / --wl-num-dy），
+   和武器名完全对称：各调各的，互不影响，可以重叠。 */
 .slot .wnum {
   min-width: calc(22px * var(--scale));
   text-align: right;
-  font-size: calc(22px * var(--scale));
+  font-size: calc(var(--wl-num-size, 22px) * var(--scale));
   font-weight: 700;
   line-height: 1;
   color: var(--white);
   transition: color 150ms linear;
+  transform: translate(var(--wl-num-dx, 0px), var(--wl-num-dy, 0px));
 }
 
 /* 状态 1：当前手持 —— 纯白、粗体、不透明。
@@ -131,11 +138,14 @@
                                           名称出现在下方时编号也不会跟着往下掉 */
   display: flex;
   align-items: center;
-  font-size: calc(18px * var(--scale));
+  font-size: calc(var(--wl-svg-num-size, 18px) * var(--scale));
   font-weight: 700;
   line-height: 1;
   color: var(--white);
   text-shadow: 0 0 calc(2px * var(--scale)) #000;
+  /* 编号位置微调：同样走 transform（不参与布局）。
+     这一段必须写在，否则会吃到上面文字态 `.slot .wnum` 的 --wl-num-* 变量。 */
+  transform: translate(var(--wl-svg-num-dx, 0px), var(--wl-svg-num-dy, 0px));
 }
 .weapon-bar-svg .slot.active > .ico {
   color: var(--wl-svg-active, #FFFFFF);

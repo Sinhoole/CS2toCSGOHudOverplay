@@ -994,6 +994,48 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
     setJs.includes("path: base + '.nameOffsetX'") && setJs.includes("path: base + '.nameOffsetY'")
     && setJs.includes("path: base + '.nameGlow'") && setJs.includes("path: base + '.nameGlowColor'"));
 
+  // ---- 武器名 vs 编号：各自独立的大小 / 位置（互不影响、允许重叠）----
+  check('DEFAULTS 含文字态武器名字号/位置（textSize 42 · offset 0）',
+    DEF.modules.weaponList.textSize === 42
+    && DEF.modules.weaponList.textOffsetX === 0 && DEF.modules.weaponList.textOffsetY === 0);
+  check('DEFAULTS 含文字态编号字号/位置（numSize 22 · offset 0）',
+    DEF.modules.weaponList.numSize === 22
+    && DEF.modules.weaponList.numOffsetX === 0 && DEF.modules.weaponList.numOffsetY === 0);
+  check('DEFAULTS 含 SVG 态编号字号/位置（numSize 18 · offset 0）',
+    DEF.modules.weaponList.svg.numSize === 18
+    && DEF.modules.weaponList.svg.numOffsetX === 0 && DEF.modules.weaponList.svg.numOffsetY === 0);
+  check('文字态武器名字号走 CSS 变量（默认 42）',
+    /\.slot \.wtext \{[^}]*font-size: calc\(var\(--wl-text-size, 42px\) \* var\(--scale\)\)/.test(hudCss));
+  check('文字态投掷物单字取武器名字号的 2/3（跟着一起缩放）',
+    /\.slot\[data-slot="4"\] \.wtext \{ font-size: calc\(var\(--wl-text-size, 42px\) \* 2 \/ 3/.test(hudCss));
+  check('文字态武器名位置走 transform（不参与布局 → 不挤动右侧编号）',
+    /\.slot \.wtext \{[^}]*transform: translate\(var\(--wl-text-dx, 0px\), var\(--wl-text-dy, 0px\)\)/.test(hudCss));
+  check('文字态编号字号走 CSS 变量（默认 22）',
+    /\.slot \.wnum \{[^}]*font-size: calc\(var\(--wl-num-size, 22px\) \* var\(--scale\)\)/.test(hudCss));
+  check('文字态编号位置走 transform（不参与布局 → 不挤动武器名）',
+    /\.slot \.wnum \{[^}]*transform: translate\(var\(--wl-num-dx, 0px\), var\(--wl-num-dy, 0px\)\)/.test(hudCss));
+  check('SVG 态编号字号走 CSS 变量（默认 18）',
+    /\.weapon-bar-svg \.wnum \{[^}]*font-size: calc\(var\(--wl-svg-num-size, 18px\) \* var\(--scale\)\)/.test(hudCss));
+  check('SVG 态编号自己那条 transform 覆盖文字态（两组变量不串味）',
+    /\.weapon-bar-svg \.wnum \{[^}]*transform: translate\(var\(--wl-svg-num-dx, 0px\), var\(--wl-svg-num-dy, 0px\)\)/.test(hudCss));
+  check('文字态编号规则里不出现 SVG 态的变量（否则会互相串）',
+    !/--wl-svg-num/.test((hudCss.match(/(?:^|\})\s*\.slot \.wnum \{[^}]*\}/) || [''])[0]));
+  check('渲染层有 setPxVar（空值 / 非数字回落默认，不会变成 0px）',
+    hudJs.includes('function setPxVar') && hudJs.includes('Number.isFinite(n) ? n : dflt'));
+  check('文字态渲染层写入武器名与编号的 6 个变量',
+    hudJs.includes("'--wl-text-size'") && hudJs.includes("'--wl-text-dx'") && hudJs.includes("'--wl-text-dy'")
+    && hudJs.includes("'--wl-num-size'") && hudJs.includes("'--wl-num-dx'") && hudJs.includes("'--wl-num-dy'"));
+  check('SVG 态渲染层写入编号的 3 个变量（按 dataset 防重设）',
+    hudJs.includes("'--wl-svg-num-size'") && hudJs.includes("'--wl-svg-num-dx'")
+    && hudJs.includes("'--wl-svg-num-dy'") && hudJs.includes('dataset.numBox'));
+  check('设置页（文字态）有武器名与编号的字号/位置控件',
+    setJs.includes('modules.weaponList.textSize') && setJs.includes('modules.weaponList.textOffsetX')
+    && setJs.includes('modules.weaponList.textOffsetY')
+    && setJs.includes('modules.weaponList.numSize') && setJs.includes('modules.weaponList.numOffsetY'));
+  check('设置页（SVG 态）有编号大小与位置控件',
+    setJs.includes("path: base + '.numSize'") && setJs.includes("path: base + '.numOffsetX'")
+    && setJs.includes("path: base + '.numOffsetY'"));
+
   // ---- 剪影颜色（默认 + 每槽位独立）----
   check('DEFAULTS 含每槽位剪影颜色 colors(1..5)',
     !!DEF.modules.weaponList.svg.colors && DEF.modules.weaponList.svg.colors['5'] === '');

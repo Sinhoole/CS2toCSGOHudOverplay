@@ -86,6 +86,16 @@
       { type: 'switch', label: '显示武器栏',   path: 'show.weaponList' },
       { type: 'switch', label: '文字描边',     path: 'show.weaponTextOutline',
         note: '在武器名与编号外描一圈深色边，便于在明亮背景上辨识。' },
+      { type: 'num',    label: '武器名字号',   path: 'modules.weaponList.textSize', min: 8, max: 80, step: 1, unit: 'px',
+        note: '投掷物那一行的单字自动取该值的 2/3。' },
+      { type: 'num',    label: '武器名位置 X', path: 'modules.weaponList.textOffsetX', min: -300, max: 300, step: 1, unit: 'px',
+        note: '负值向左，正值向右。位置微调不参与布局，不会挤动右侧编号。' },
+      { type: 'num',    label: '武器名位置 Y', path: 'modules.weaponList.textOffsetY', min: -300, max: 300, step: 1, unit: 'px',
+        note: '负值向上，正值向下。' },
+      { type: 'num',    label: '编号字号',     path: 'modules.weaponList.numSize', min: 8, max: 60, step: 1, unit: 'px' },
+      { type: 'num',    label: '编号位置 X',   path: 'modules.weaponList.numOffsetX', min: -300, max: 300, step: 1, unit: 'px' },
+      { type: 'num',    label: '编号位置 Y',   path: 'modules.weaponList.numOffsetY', min: -300, max: 300, step: 1, unit: 'px',
+        note: '编号与武器名各自独立定位，互不推挤，允许重叠。' },
     ],
   });
 })();

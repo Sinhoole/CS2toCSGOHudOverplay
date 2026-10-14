@@ -72,6 +72,15 @@
     return n;
   }
 
+  /**
+   * 把「像素数值」写进元素的 CSS 变量（字号 / 位置微调都用它）。
+   * 空值与非数字一律回落到默认值 —— 设置界面把输入框清空时不能变成 0px。
+   */
+  function setPxVar(el, name, value, dflt) {
+    const n = (value === '' || value == null) ? NaN : Number(value);
+    el.style.setProperty(name, `${Number.isFinite(n) ? n : dflt}px`);
+  }
+
   /** 按锚点写内联定位（和 .custom-item 的 9 锚点公式一致，避免复制一大段 CSS）。 */
   function applyAnchor(el, anchor, offX, offY, k, rot) {
     const a = CUSTOM_ANCHORS.indexOf(anchor) >= 0 ? anchor : 'tl';
@@ -239,7 +248,7 @@
 
   globalThis.OphHudKit = {
     $, ophComputeFit, CUSTOM_ANCHORS, CUSTOM_ALIGNS, VAR_FNS, fillTemplate,
-    toRgbTriplet, formatMoney, pct, elSpan, applyAnchor, glowFilter,
+    toRgbTriplet, formatMoney, pct, elSpan, setPxVar, applyAnchor, glowFilter,
     weaponLabel, grenadeCharsOf, isKnifeName, weaponIconFile, grenadeIconFile,
     makeIconNode, EV_PRIORITY, PV_EV_TEXT, MODULE_ELS,
   };

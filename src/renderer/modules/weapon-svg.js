@@ -96,6 +96,16 @@ function renderWeaponBarSvg(s) {
       else el.style.removeProperty('--wl-svg-ico-dy');
     }
 
+    // 右侧编号（1～5）的字号与位置：和「名称」完全对称，两者各调各的、互不影响，
+    // 位置走 transform → 挪编号不会动图标，也不会把名称挤走
+    const numBox = `${svg.numSize}|${svg.numOffsetX}|${svg.numOffsetY}`;
+    if (el.dataset.numBox !== numBox) {
+      el.dataset.numBox = numBox;
+      K.setPxVar(el, '--wl-svg-num-size', svg.numSize, 18);
+      K.setPxVar(el, '--wl-svg-num-dx', svg.numOffsetX, 0);
+      K.setPxVar(el, '--wl-svg-num-dy', svg.numOffsetY, 0);
+    }
+
     // 有常显名称的槽位即使空着也留着（那一行就是个固定标签）
     el.classList.toggle('empty', empty && !pinName);
     el.classList.toggle('active', !!info && !!info.active && !isGrenade);

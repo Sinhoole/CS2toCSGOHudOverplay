@@ -102,6 +102,15 @@ const DEFAULTS = {
       offsetX: 0, offsetY: 0, scaleX: 1, scaleY: 1,
       rotate: 0, opacity: 1, glow: 0, glowColor: '#FFFFFF',
       textColor: '#FFFFFF', dimColor: 'rgba(242, 245, 247, 0.6)',
+      // ---- 文字态：武器名与编号各自独立的大小 / 位置 ----
+      // 位置走 transform: translate，不参与布局 → 调名称不会动编号，调编号不会动名称，
+      // 两者可以任意重叠。默认值 = 重构前写死的值，不动就等于没改。
+      textSize: 42,            // 武器名字号（px）；投掷物那一行取该值的 2/3
+      textOffsetX: 0,          // 武器名位置微调 X（px）
+      textOffsetY: 0,          // 武器名位置微调 Y（px）
+      numSize: 22,             // 键位编号（1～5）字号（px）
+      numOffsetX: 0,           // 编号位置微调 X（px）
+      numOffsetY: 0,           // 编号位置微调 Y（px）
       // SVG 图标态开关（与上面「文字态」各自独立，可并存）
       svgMode: false,
       // SVG 图标态专属配置：纯色剪影 + 选中放大辉光
@@ -120,6 +129,11 @@ const DEFAULTS = {
         nameOffsetY: 0,            // 名称位置微调 Y
         nameGlow: true,            // 名称是否辉光（复用上面的「选中辉光半径」）
         nameGlowColor: '',         // 名称辉光颜色（留空 = 跟随该槽位的辉光颜色）
+        // 右侧编号（1～5）：字号与位置。和名称完全对称、互不影响、可以重叠。
+        // 位置走 transform: translate，不参与布局 → 编号挪走也不会把图标或名称挤动。
+        numSize: 18,               // 编号字号（px，默认值 = 重构前写死的 18）
+        numOffsetX: 0,             // 编号位置微调 X（px）
+        numOffsetY: 0,             // 编号位置微调 Y（px）
         // 每栏常显名称（留空 = 不常显）；该栏被选中且开了「显示武器名称」时，
         // 让位给实际武器名，未选中就显示这里填的字
         slotNames: { 1: '', 2: '', 3: '', 4: '', 5: '' },
