@@ -58,9 +58,12 @@
       </g>
     </symbol>
     <symbol id="sym-bullet" viewBox="0 0 16 36">
+      <!-- 颜色一律走 currentColor：<use> 引用的是 shadow tree，外部 CSS 选不到里面的 path，
+           只有 currentColor 能把容器上的 color 透传进来（低弹量整条转红就靠这个）。
+           原 fill 是 rgba(230,236,242,0.09)，拆成 currentColor + fill-opacity 后视觉不变。 -->
       <path d="M8 1.6c2.4 3.5 3.9 7.2 3.9 11.2v20.6H4.1V12.8c0-4 1.5-7.7 3.9-11.2z"
-            fill="rgba(230, 236, 242, 0.09)" stroke="#DFE5EB" stroke-width="2.1" stroke-linejoin="round"/>
-      <path d="M4.1 29.4h7.8" stroke="#DFE5EB" stroke-width="1.7"/>
+            fill="currentColor" fill-opacity="0.09" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/>
+      <path d="M4.1 29.4h7.8" stroke="currentColor" stroke-width="1.7"/>
     </symbol>
   </defs>
 </svg>
@@ -176,7 +179,17 @@
         <span class="clip" id="clip">30</span><span class="slash">/</span><span class="reserve" id="reserve">90</span>
       </span>
 
+      <!-- 子弹装饰带：10 颗 = 5 个可见槽位 + 5 个左侧预位。
+           一次滚动最多同时有 5 颗在"掉出"、5 颗在"补入"，所以预位池取 5 就够，不必回收元素。
+           每颗的相位由渲染层写 --k 驱动（见 ammo.css），初始全部透明，由脚本落位。
+           单颗显隐走 opacity 而不是 visibility —— 未持枪时父级 .gun-off 用的正是 visibility，
+           子元素再写 visibility 会把它盖掉。 -->
       <span class="bullets" data-show="ammo" aria-hidden="true" id="bulletsBox">
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
+        <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
         <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
         <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>
         <svg viewBox="0 0 16 36"><use href="#sym-bullet"/></svg>

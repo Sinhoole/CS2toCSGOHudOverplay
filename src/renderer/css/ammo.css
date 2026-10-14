@@ -98,21 +98,44 @@
   text-shadow: var(--outline-text);
 }
 
-/* ---- 子弹装饰：固定 5 枚，斜排上升，全程静止 ---- */
+/* ---- 子弹装饰带：10 颗 = 5 可见槽位 + 5 左侧预位，位置由相位 --k 驱动 ----
+   射击时整条带右移一格（右端掉出一颗、左端补入一颗）；弹药 ≤ 阈值时只掉不补，左端随之空出。
+   相位由渲染层逐颗写入：-1 = 左侧预位（屏外）；0..4 = 可见槽位；> 4 = 已掉出（屏外）。 */
 .bullets {
-  display: flex;
-  align-items: flex-end;
+  --bullet-step: calc(13px * var(--scale));   /* 单格步进 = 15px 宽 − 2px 重叠 */
+  position: relative;
+  flex: 0 0 auto;                             /* 宽度自持，不参与收缩 */
   margin-left: calc(4px * var(--scale));
+  /* 绝对定位后容器宽度会塌为 0，必须显式给出，否则弹匣数字与子弹栏的间距会垮掉。
+     这里按 5 格步进 + 单颗宽算（4×13 + 15 = 67px），与原 flex 布局的盒宽逐像素一致。
+     旋转 20° 会让右上角超出布局盒约 11px —— 与原实现一样不裁切，显隐靠 opacity。 */
+  width: calc(4 * var(--bullet-step) + 15px * var(--scale));
+  height: calc(33px * var(--scale));
+  color: var(--bullet-color, #DFE5EB);
+  transition: filter 90ms linear;
 }
+
+/* 滚动期间整条弹带做运动模糊，停下即恢复清晰。
+   渲染层每次滚动开始时加类、滚动结束后撤掉；连续扫射时定时器反复重置 → 模糊持续存在。 */
+.bullets.is-rolling { filter: blur(var(--bullet-roll-blur, 1.1px)); }
+
+/* 低弹量（clip ≤ lowAmmoThreshold）整条转红 —— 与弹匣数字转红同一个道理 */
+.bullets.is-low { color: var(--bullet-low-color, var(--red)); }
 
 .bullets svg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
   width: calc(15px * var(--scale));
   height: calc(33px * var(--scale));
-  margin-left: calc(-2px * var(--scale));
   transform-origin: 50% 100%;
+  /* 位置只走 transform：不参与布局，所以相位推进不会挤动任何元素，允许任意重叠。
+     每颗各自倾斜 20°，整体底部对齐成一排。 */
+  transform: translateX(calc(var(--k, 0) * var(--bullet-step))) rotate(20deg);
 }
 
-.bullets svg:first-child { margin-left: 0; }
-
-/* 每颗各自倾斜，整体水平一排（底部对齐，不做上下错位） */
-.bullets svg:nth-child(n) { transform: rotate(20deg); }
+/* 减少动态：既不做模糊过渡，也不留模糊 —— 与全项目「减少动态即关动效」的既有约定一致 */
+@media (prefers-reduced-motion: reduce) {
+  .bullets { transition: none; }
+  .bullets.is-rolling { filter: none; }
+}

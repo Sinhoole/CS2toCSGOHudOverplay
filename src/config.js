@@ -105,6 +105,17 @@ const DEFAULTS = {
       killsOffsetX: 0,       // 击杀栏位置微调 X（px），负值向左
       killsOffsetY: 0,       // 击杀栏位置微调 Y（px），负值向上
       killsScale: 1,         // 击杀栏整体大小（倍数，含图标与间距）
+
+      // ---- 子弹装饰带：射击滚动 / 低弹量变色 ----
+      // 装饰颗数恒为 min(5, clip)，靠右排布：射击时整条带右移一格，
+      // 右端掉出一颗、左端补入一颗；clip ≤ lowAmmoThreshold 时只掉不补，左端随之空出。
+      // 全部默认值 = 重构前写死的观感（静止时不动、白描边），不动就等于没改。
+      bulletColor: '#DFE5EB',        // 子弹常态颜色（原描边字面量）
+      bulletLowColor: '#E8231C',     // 低弹量颜色（= 主题 --red）
+      lowAmmoThreshold: 5,           // ≤ 此值转红，且只掉不补
+      bulletRoll: true,              // 滚动动画总开关
+      bulletRollMs: 110,             // 单次滚动时长（ms）；一帧掉多发时按每多一发减 12ms、下限 70ms 压缩
+      bulletRollBlur: 1.1,           // 滚动期间的运动模糊强度（px）；0 = 关闭
     },
     weaponList: {
       offsetX: 0, offsetY: 0, scaleX: 1, scaleY: 1,

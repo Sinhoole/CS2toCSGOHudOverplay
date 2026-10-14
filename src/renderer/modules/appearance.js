@@ -69,6 +69,17 @@ function applyModules(cfg) {
     ks.setProperty('--kills-scale', String(n(am.killsScale, 1)));
   }
 
+  // ---- 子弹装饰带：常态色 / 低弹量色 / 滚动模糊强度 ----
+  // 颜色写在 .bullets 自己身上，由 <use> 透传进 shadow tree（符号内部是 currentColor）。
+  // 留空就交给 CSS 的 var 回退值，不覆盖。
+  if (C.nodes.bulletsBox) {
+    const bs = C.nodes.bulletsBox.style;
+    // 传空字符串 = 移除内联变量 → 回退到 CSS 里的 var 默认色（用户清空颜色时也成立）
+    bs.setProperty('--bullet-color', am.bulletColor || '');
+    bs.setProperty('--bullet-low-color', am.bulletLowColor || '');
+    bs.setProperty('--bullet-roll-blur', `${Math.max(0, n(am.bulletRollBlur, 1.1))}px`);
+  }
+
   const wb = M.weaponList || {};
   if (C.nodes.weaponBar) {
     if (wb.textColor) C.nodes.weaponBar.style.setProperty('--wtext-color', wb.textColor);

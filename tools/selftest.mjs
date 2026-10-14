@@ -1067,6 +1067,61 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   check('减少动态偏好下关闭徽章动画',
     /prefers-reduced-motion[^{]*\{[\s\S]*?\.badge\.on\.fresh \{ animation: none/.test(hudCss));
 
+  // ---- 子弹装饰带：射击滚动 · 低弹量转红 · 滚动模糊 ----
+  {
+    const beltHtml = read('src/renderer/index.html');
+    check('DEFAULTS 含子弹带 6 个键（颜色 / 阈值 / 滚动 / 时长 / 模糊）',
+      DEF.modules.ammo.bulletColor === '#DFE5EB' && DEF.modules.ammo.bulletLowColor === '#E8231C'
+      && DEF.modules.ammo.lowAmmoThreshold === 5 && DEF.modules.ammo.bulletRoll === true
+      && DEF.modules.ammo.bulletRollMs === 110 && DEF.modules.ammo.bulletRollBlur === 1.1);
+    check('子弹符号颜色走 currentColor（<use> 的 shadow tree 外部选不到内部 path）',
+      /symbol id="sym-bullet"[\s\S]{0,400}?stroke="currentColor"[\s\S]{0,200}?stroke="currentColor"/.test(beltHtml)
+      && !/symbol id="sym-bullet"[\s\S]{0,400}?#DFE5EB/.test(beltHtml));
+    check('子弹填充拆成 currentColor + fill-opacity（视觉不变但可改色）',
+      /symbol id="sym-bullet"[\s\S]{0,400}?fill="currentColor" fill-opacity="0\.09"/.test(beltHtml));
+    check('子弹带 10 颗（5 可见槽位 + 5 左侧预位，够「掉出」与「补入」同时进行）',
+      (beltHtml.match(/<use href="#sym-bullet"\/>/g) || []).length === 10);
+    check('子弹带容器仍是 data-show="ammo"（弹药开关照旧管住它）',
+      /<span class="bullets" data-show="ammo"[^>]*id="bulletsBox"/.test(beltHtml));
+    check('子弹带改绝对定位 + 显式宽度（flex 会把屏外预位颗算进占位，挤动其余子弹）',
+      /\.bullets \{[\s\S]{0,600}?position: relative;[\s\S]{0,600}?width: calc\(4 \* var\(--bullet-step\)/.test(hudCss));
+    check('子弹位置由相位 --k 驱动，只走 transform（不参与布局 → 允许任意重叠）',
+      /\.bullets svg \{[\s\S]{0,400}?transform: translateX\(calc\(var\(--k, 0\) \* var\(--bullet-step\)\)\) rotate\(20deg\)/.test(hudCss));
+    check('低弹量整条转红（复用 currentColor 的 color 变量）',
+      /\.bullets\.is-low \{ color: var\(--bullet-low-color, var\(--red\)\)/.test(hudCss));
+    check('滚动模糊挂在容器上（一次合成，不逐颗动 filter）',
+      /\.bullets\.is-rolling \{ filter: blur\(var\(--bullet-roll-blur, 1\.1px\)\)/.test(hudCss));
+    check('减少动态下既不做模糊过渡也不留模糊',
+      /prefers-reduced-motion[^{]*\{[\s\S]{0,200}?\.bullets\.is-rolling \{ filter: none/.test(hudCss));
+    check('单颗显隐走 opacity 而非 visibility（否则会盖掉父级 .gun-off 的 visibility）',
+      !/\.bullets svg \{[^}]*visibility/.test(hudCss));
+    check('渲染层用 Web Animations API 播滚动（fill: both，撤动画不闪回）',
+      hudJs.includes('.animate(') && hudJs.includes("fill: 'both'"));
+    check('装饰颗数恒为 min(5, clip)',
+      hudJs.includes('Math.min(BELT_SLOTS, clip)'));
+    check('一帧掉多发合并为一次快滚（每多一发 −12ms，下限 70ms）',
+      hudJs.includes('Math.max(70, base - (delta - 1) * 12)'));
+    check('换弹从左侧逐颗补入（单颗 140ms、间隔封顶 40ms）',
+      hudJs.includes('BELT_FILL_MS = 140') && hudJs.includes('BELT_FILL_GAP = 40'));
+    check('切枪 / 死亡 / 无枪各有独立闸门，切枪直接落位不播动画',
+      hudJs.includes('w.name !== beltWeapon') && hudJs.includes('beltClip === null')
+      && hudJs.includes('!(s.health > 0)'));
+    check('空闲池在改相位之前取（否则掉出颗会同时被选去补入）',
+      hudJs.indexOf('const pool = idleBullets()') < hudJs.indexOf('placeBullet(b, to)'));
+    check('滚动模糊可撤销（定时器 + 类移除，不会常驻糊掉）',
+      hudJs.includes('clearTimeout(beltBlurTimer)') && hudJs.includes("classList.remove('is-rolling')"));
+    check('渲染层消费子弹颜色 / 阈值 / 滚动 / 模糊配置',
+      hudJs.includes('bulletRollBlur') && hudJs.includes('lowAmmoThreshold')
+      && hudJs.includes('bulletRollMs') && hudJs.includes('bulletColor'));
+    check('appearance 下发子弹颜色与模糊强度变量',
+      hudJs.includes("'--bullet-color'") && hudJs.includes("'--bullet-low-color'")
+      && hudJs.includes("'--bullet-roll-blur'"));
+    check('设置页有子弹颜色 / 低弹量色 / 阈值 / 滚动 / 时长 / 模糊 6 个控件',
+      setJs.includes('modules.ammo.bulletColor') && setJs.includes('modules.ammo.bulletLowColor')
+      && setJs.includes('modules.ammo.lowAmmoThreshold') && setJs.includes('modules.ammo.bulletRoll')
+      && setJs.includes('modules.ammo.bulletRollMs') && setJs.includes('modules.ammo.bulletRollBlur'));
+  }
+
   // ---- 剪影颜色（默认 + 每槽位独立）----
   check('DEFAULTS 含每槽位剪影颜色 colors(1..5)',
     !!DEF.modules.weaponList.svg.colors && DEF.modules.weaponList.svg.colors['5'] === '');

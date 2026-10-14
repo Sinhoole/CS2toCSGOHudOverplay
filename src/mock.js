@@ -32,9 +32,10 @@ function buildPayload(t) {
               : phase === 'over' ? 0
               : Math.max(0, Math.round(100 - progA * 100));
 
-  // 每 8 秒打空一次弹匣
+  // 每 8 秒打空一次弹匣，粒度取「每 0.2 秒掉 1 发」——
+  // 原来是一帧跳 5 发，看不出子弹带的逐发滚动（子弹装饰带的验证靠它）。
   const shotCycle = local % 8;
-  const clip = Math.max(0, Math.round(30 - shotCycle * 5));   // 必须取整：local 是浮点数，不取整会算出 3.91 这种值
+  const clip = Math.max(0, 30 - Math.floor(shotCycle / 0.2));
   const reserve = Math.max(0, 90 - Math.floor(local / 8) * 5);
 
   // 金钱：第 40 秒买枪扣 350（消费扣除），第 78 秒击杀奖励 +100

@@ -76,6 +76,18 @@
         note: '负值向上。' },
       { type: 'num',    label: '击杀栏大小',   path: 'modules.ammo.killsScale', min: 0.3, max: 3, step: 0.01, unit: '×',
         note: '整块骷髅等比缩放，以右下角为原点向左上展开，不会顶出屏幕。' },
+      { type: 'color',  label: '子弹颜色',     path: 'modules.ammo.bulletColor',
+        note: '装饰子弹的常态颜色。' },
+      { type: 'color',  label: '低弹量颜色',   path: 'modules.ammo.bulletLowColor',
+        note: '弹匣数降到阈值以下时整条子弹带的颜色。' },
+      { type: 'num',    label: '低弹量阈值',   path: 'modules.ammo.lowAmmoThreshold', min: 0, max: 30, step: 1, unit: '发',
+        note: '弹匣数 ≤ 此值时子弹转红，且射击只掉出不补充，左端随之空出。' },
+      { type: 'switch', label: '射击滚动动画', path: 'modules.ammo.bulletRoll',
+        note: '射击时子弹带整体右移：右端掉出一颗、左端补入一颗。弹匣数多于显示颗数时数量恒定。' },
+      { type: 'num',    label: '滚动时长',     path: 'modules.ammo.bulletRollMs', min: 0, max: 400, step: 10, unit: 'ms',
+        note: '单次滚动的时长。一帧内掉多发时自动压缩（每多一发减 12ms，下限 70ms），避免动画积压。' },
+      { type: 'num',    label: '滚动模糊',     path: 'modules.ammo.bulletRollBlur', min: 0, max: 6, step: 0.1, unit: 'px',
+        note: '滚动过程中的运动模糊强度，0 = 关闭。连续扫射时模糊持续存在。' },
     ],
   });
 

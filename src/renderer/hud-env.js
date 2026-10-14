@@ -57,6 +57,7 @@
     reserve: $('reserve'),
     ammoBlock: $('ammoBlock'),
     killsBlock: $('killsBlock'),
+    bulletsBox: $('bulletsBox'),
     roundKills: $('roundKills'),
     money: $('money'),
     rewardWrap: $('rewardWrap'),
