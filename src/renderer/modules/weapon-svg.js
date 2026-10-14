@@ -57,7 +57,7 @@ function renderWeaponBarSvg(s) {
       else el.style.removeProperty('--wl-svg-glow-color');
     }
 
-    // 每槽位独立剪影颜色：设了就用它，留空则回落全局 --wl-svg-color
+    // 每槽位独立剪影颜色：设了就用它，留空则回落全局 --wl-svg-color（只作用未选中态）
     const sc = (svg.colors && svg.colors[i + 1]) || '';
     if (el.dataset.silColor !== sc) {
       el.dataset.silColor = sc;
@@ -65,10 +65,36 @@ function renderWeaponBarSvg(s) {
       else el.style.removeProperty('--wl-svg-color');
     }
 
+    // 每槽位「选中态」剪影颜色：设了就用它，留空则回落全局 --wl-svg-active
+    const ac = (svg.activeColors && svg.activeColors[i + 1]) || '';
+    if (el.dataset.actColor !== ac) {
+      el.dataset.actColor = ac;
+      if (ac) el.style.setProperty('--wl-svg-active', ac);
+      else el.style.removeProperty('--wl-svg-active');
+    }
+
     const info = list[i];
     const isGrenade = info && info.slot === 4;
     const empty = !info || (isGrenade ? (info.chars || []).length === 0 : !info.name);
     const pinName = slotNames[i + 1] || '';
+
+    // 每槽位图标大小 / 位置微调（逐槽独立，默认单图标槽 46、投掷物槽 34）
+    // 走 CSS 变量：大小同时决定「编号列的对齐行高」，位置只做 transform、不参与布局
+    const rawSize = Number((svg.iconSizes || {})[i + 1]);
+    const icoSize = Number.isFinite(rawSize) && rawSize > 0 ? rawSize : (isGrenade ? 34 : 46);
+    const icoDx = Number((svg.iconOffsetX || {})[i + 1]) || 0;
+    const icoDy = Number((svg.iconOffsetY || {})[i + 1]) || 0;
+    const box = `${icoSize}|${icoDx}|${icoDy}`;
+    if (el.dataset.icoBox !== box) {
+      el.dataset.icoBox = box;
+      el.style.setProperty('--wl-svg-ico-size', `${icoSize}px`);
+      // 单图标槽：编号跟着图标中心走；投掷物槽：原行高 46 是保底，图标比它大才把它撑开
+      el.style.setProperty('--wl-svg-row-h', `${isGrenade ? Math.max(46, icoSize) : icoSize}px`);
+      if (icoDx) el.style.setProperty('--wl-svg-ico-dx', `${icoDx}px`);
+      else el.style.removeProperty('--wl-svg-ico-dx');
+      if (icoDy) el.style.setProperty('--wl-svg-ico-dy', `${icoDy}px`);
+      else el.style.removeProperty('--wl-svg-ico-dy');
+    }
 
     // 有常显名称的槽位即使空着也留着（那一行就是个固定标签）
     el.classList.toggle('empty', empty && !pinName);

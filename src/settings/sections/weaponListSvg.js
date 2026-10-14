@@ -76,9 +76,16 @@ function buildWeaponListSvgCard() {
   for (let i = 1; i <= 5; i++) {
     styleBody.append(fieldRow(`${i} 号槽位剪影`, colorControl({
       type: 'color', label: `${i} 号槽位剪影`, path: `${base}.colors.${i}`, fallback: silFallback,
-    }), i === 1 ? '留空则使用上方默认剪影颜色。仅影响未选中状态，选中状态仍使用「选中剪影颜色」。' : ''));
+    }), i === 1 ? '留空则使用上方默认剪影颜色。仅影响未选中状态；该栏选中时改用「N 号槽位选中剪影」。' : ''));
   }
   styleBody.append(fieldRow('选中剪影颜色', colorControl({ type: 'color', label: '选中剪影颜色', path: base + '.activeColor', fallback: '#FFFFFF' })));
+  // 每槽位独立「选中态」剪影颜色（留空 = 回落上面的全局选中剪影颜色）
+  const actFallback = getPath(state.cfg, base + '.activeColor') || '#FFFFFF';
+  for (let i = 1; i <= 5; i++) {
+    styleBody.append(fieldRow(`${i} 号槽位选中剪影`, colorControl({
+      type: 'color', label: `${i} 号槽位选中剪影`, path: `${base}.activeColors.${i}`, fallback: actFallback,
+    }), i === 1 ? '留空则使用上方选中剪影颜色。仅影响该槽位被手持（选中）时。' : ''));
+  }
   styleBody.append(fieldRow('选中辉光半径', numControl({ type: 'num', label: '辉光半径', path: base + '.glow', min: 0, max: 40, step: 1, unit: 'px' })));
   styleBody.append(fieldRow('辉光颜色', colorControl({ type: 'color', label: '辉光颜色', path: base + '.glowColor', fallback: '#3b82f6' })));
   // 每槽位独立辉光颜色（留空 = 回落上面的全局辉光颜色）
@@ -91,6 +98,31 @@ function buildWeaponListSvgCard() {
   styleBody.append(fieldRow('开局显示毫秒（预留）', numControl({ type: 'num', label: 'idleHideMs', path: base + '.idleHideMs', min: 0, max: 10000, step: 100, unit: 'ms' })));
   styleCard.append(styleBody);
   wrap.append(styleCard);
+
+  // ---- 图标大小与位置（逐槽独立）----
+  const icoCard = el('div', 'card');
+  const icoHead = el('div', 'card-head');
+  {
+    const box = el('div');
+    box.append(el('div', 'card-title', '图标大小与位置（逐槽）'));
+    box.append(el('div', 'card-hint', '每个槽位单独调整图标尺寸与位置。位置是相对默认位置的微调，不影响编号列与其他槽位。'));
+    icoHead.append(box);
+  }
+  icoCard.append(icoHead);
+  const icoBody = el('div', 'card-body');
+  for (let i = 1; i <= 5; i++) {
+    icoBody.append(fieldRow(`${i} 号槽位图标大小`, numControl({
+      type: 'num', label: `${i} 号图标大小`, path: `${base}.iconSizes.${i}`, min: 16, max: 120, step: 1, unit: 'px',
+    }), i === 1 ? '1～3、5 号默认 46px，4 号投掷物槽默认 34px。' : ''));
+    icoBody.append(fieldRow(`${i} 号槽位图标位置 X`, numControl({
+      type: 'num', label: `${i} 号图标位置 X`, path: `${base}.iconOffsetX.${i}`, min: -80, max: 80, step: 1, unit: 'px',
+    })));
+    icoBody.append(fieldRow(`${i} 号槽位图标位置 Y`, numControl({
+      type: 'num', label: `${i} 号图标位置 Y`, path: `${base}.iconOffsetY.${i}`, min: -80, max: 80, step: 1, unit: 'px',
+    }), i === 1 ? '负值向上，正值向下。位置微调不参与布局，编号列与其他槽位都不会跟着动。' : ''));
+  }
+  icoCard.append(icoBody);
+  wrap.append(icoCard);
 
   // ---- 名称与行距 ----
   const nameCard = el('div', 'card');

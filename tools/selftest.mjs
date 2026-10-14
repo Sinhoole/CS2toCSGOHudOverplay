@@ -911,13 +911,45 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
   check('槽位改为纵向（图标上、名称下）',
     /\.weapon-bar-svg \.slot \{[^}]*flex-direction: column/.test(hudCss));
   check('编号垂直居中在图标那一行（名称在下方也不掉）',
-    /\.weapon-bar-svg \.wnum \{[^}]*top: 0[^}]*height: calc\(46px \* var\(--scale\)\)/.test(hudCss));
+    /\.weapon-bar-svg \.wnum \{[^}]*top: 0[^}]*height: calc\(var\(--wl-svg-row-h, 46px\) \* var\(--scale\)\)/.test(hudCss));
   check('右侧编号列对齐：编号统一右缘',
     /\.weapon-bar-svg \.wnum \{[^}]*right: calc\(-1 \* var\(--wl-svg-num-gap, 26px\)/.test(hudCss));
   check('1/2/3 号槽位图标左右镜像',
     /\.slot\[data-slot="1"\][\s\S]{0,160}--wl-svg-mirror: -1/.test(hudCss));
   check('镜像与选中放大共用 transform 变量（不会互相覆盖）',
     hudCss.includes('scaleX(var(--wl-svg-mirror, 1)) scale(var(--wl-svg-active-scale, 1.18))'));
+
+  // ---- 图标大小 / 位置（逐槽独立）与逐槽选中剪影色 ----
+  check('图标尺寸走逐槽变量（默认 46px）',
+    /\.weapon-bar-svg \.ico \{[^}]*width: calc\(var\(--wl-svg-ico-size, 46px\) \* var\(--scale\)\)/.test(hudCss));
+  check('图标位置微调走 transform（不参与布局、不挤动槽位）',
+    /\.weapon-bar-svg \.ico \{[^}]*transform: translate\(var\(--wl-svg-ico-dx, 0px\), var\(--wl-svg-ico-dy, 0px\)\)/.test(hudCss));
+  check('选中态 transform 带上同样的位置微调（否则选中瞬间会跳回原位）',
+    /\.weapon-bar-svg \.slot\.active > \.ico \{[^}]*translate\(var\(--wl-svg-ico-dx, 0px\)/.test(hudCss));
+  check('投掷物槽图标尺寸同样可调（默认 34px）',
+    /\.weapon-bar-svg \.grenades \.ico \{[^}]*var\(--wl-svg-ico-size, 34px\)/.test(hudCss));
+  check('投掷物行高与图标自适应居中',
+    /\.weapon-bar-svg \.grenades \{[^}]*padding-top: calc\(\(var\(--wl-svg-row-h, 46px\)/.test(hudCss));
+  check('投掷物小盒宽度跟随图标尺寸',
+    /\.weapon-bar-svg \.grenades \.nade \{[^}]*width: calc\(var\(--wl-svg-ico-size, 34px\)/.test(hudCss));
+  check('编号行高由渲染层按槽位写入',
+    hudJs.includes('--wl-svg-row-h') && hudJs.includes('--wl-svg-ico-size'));
+  check('DEFAULTS 含逐槽选中剪影色 activeColors(1..5)',
+    !!DEF.modules.weaponList.svg.activeColors && DEF.modules.weaponList.svg.activeColors['5'] === '');
+  check('DEFAULTS 含逐槽图标大小 iconSizes（默认 46，4 号 34）',
+    !!DEF.modules.weaponList.svg.iconSizes
+    && DEF.modules.weaponList.svg.iconSizes['1'] === 46
+    && DEF.modules.weaponList.svg.iconSizes['4'] === 34);
+  check('DEFAULTS 含逐槽图标位置 iconOffsetX / iconOffsetY',
+    !!DEF.modules.weaponList.svg.iconOffsetX && !!DEF.modules.weaponList.svg.iconOffsetY
+    && DEF.modules.weaponList.svg.iconOffsetY['5'] === 0);
+  check('渲染层消费逐槽选中剪影色（槽位 inline --wl-svg-active）',
+    hudJs.includes('activeColors') && hudJs.includes("dataset.actColor"));
+  check('渲染层逐槽图标变量按 dataset 防重设',
+    hudJs.includes('dataset.icoBox') && hudJs.includes('--wl-svg-ico-dx'));
+  check('设置界面有逐槽图标大小 / 位置控件',
+    setJs.includes('.iconSizes.') && setJs.includes('.iconOffsetX.') && setJs.includes('.iconOffsetY.'));
+  check('设置界面有逐槽选中剪影色控件', setJs.includes('.activeColors.'));
 
   // ---- 行距 / 选中放大 / 名称显示 ----
   check('DEFAULTS 含行距 gap / 放大 activeScale / 名称开关',
