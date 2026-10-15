@@ -1,7 +1,7 @@
 {
   "name": "overplayhud",
   "productName": "OverplayHUD",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "private": true,
   "description": "把 CS2 的 HUD 还原成 CS:GO 时代 —— 基于 Valve 官方 Game State Integration 的透明覆盖层",
   "author": "Sinhoole",
