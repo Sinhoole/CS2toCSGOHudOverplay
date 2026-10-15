@@ -41,6 +41,10 @@
     C.aliveCountMode = hudCfg.aliveCountMode ?? 'label';
     C.root.classList.toggle('mark-off', hudCfg.factionMark === false);
     C.root.classList.toggle('woutline', hudCfg.weaponTextOutline === true);
+    // 忽略系统减少动态：挂到 :root 上，CSS 侧用 :root:not(.force-motion) 让
+    // prefers-reduced-motion 的关闭规则整体失效；JS 侧读 C.forceMotion（见 ammo.js）。
+    C.forceMotion = hudCfg.ignoreReducedMotion === true;
+    document.documentElement.classList.toggle('force-motion', C.forceMotion);
 
     C.textMap = Object.assign({
       weaponNames: {}, grenadeChars: {}, grenadeSep: '・',

@@ -88,6 +88,8 @@
         note: '单次滚动的时长。一帧内掉多发时自动压缩（每多一发减 12ms，下限 70ms），避免动画积压。' },
       { type: 'num',    label: '滚动模糊',     path: 'modules.ammo.bulletRollBlur', min: 0, max: 6, step: 0.1, unit: 'px',
         note: '滚动过程中的运动模糊强度，0 = 关闭。连续扫射时模糊持续存在。' },
+      { type: 'switch', label: '忽略系统减少动态', path: 'hud.ignoreReducedMotion',
+        note: 'Windows 关闭「动画效果」时，系统会上报减少动态偏好，滚动、模糊与击杀徽章动画会被一并关闭。开启本项后 HUD 动画照常播放。' },
     ],
   });
 

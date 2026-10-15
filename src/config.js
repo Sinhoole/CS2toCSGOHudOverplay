@@ -357,6 +357,7 @@ const DEFAULTS = {
     moneyDeltaHoldMs: 1800,      // 变动提示停留时长（规范要求 1.5~2 秒）
     aliveCountMode: 'label',
     factionMark: true,           // 顶部阵营色块里的底纹（CT 翅膀 / T 交叉弯刀）     // 'label' 只显示 CT/T；'auto' 有真实人数时（GOTV/观察者）自动显示人数
+    ignoreReducedMotion: false,  // 忽略系统「减少动态」偏好：开启后滚动 / 模糊 / 徽章等动画照常播放
   },
 
   // ---- 组件开关 ----

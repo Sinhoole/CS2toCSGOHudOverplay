@@ -84,7 +84,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gchar.g-in { animation: none; }
+  :root:not(.force-motion) .gchar.g-in { animation: none; }
 }
 
 /* ============================================================

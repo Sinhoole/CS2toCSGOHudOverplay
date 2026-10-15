@@ -64,8 +64,10 @@
   100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
 }
 
+/* 减少动态：既不做徽章动画，也不留模糊 —— 与全项目「减少动态即关动效」的既有约定一致。
+   用户开启 hud.ignoreReducedMotion 后 :root 挂 .force-motion，这些关闭规则整体失效。 */
 @media (prefers-reduced-motion: reduce) {
-  .badge.on.fresh { animation: none; }
+  :root:not(.force-motion) .badge.on.fresh { animation: none; }
 }
 
 /* ---- 弹匣 / 备弹 ---- */
@@ -136,6 +138,6 @@
 
 /* 减少动态：既不做模糊过渡，也不留模糊 —— 与全项目「减少动态即关动效」的既有约定一致 */
 @media (prefers-reduced-motion: reduce) {
-  .bullets { transition: none; }
-  .bullets.is-rolling { filter: none; }
+  :root:not(.force-motion) .bullets { transition: none; }
+  :root:not(.force-motion) .bullets.is-rolling { filter: none; }
 }

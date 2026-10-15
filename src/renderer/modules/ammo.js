@@ -105,8 +105,10 @@ function renderKills(s) {
     return Number.isFinite(n) ? n : d;
   }
 
-  /** 减少动态偏好：与 CSS 里 prefers-reduced-motion 的处理保持一致（不做补间、不加模糊） */
+  /** 减少动态偏好：与 CSS 里 prefers-reduced-motion 的处理保持一致（不做补间、不加模糊）。
+   *  用户开启「忽略系统减少动态」（hud.ignoreReducedMotion）时视为不需要减少。 */
   function prefersReduce() {
+    if (C.forceMotion) return false;
     try {
       return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     } catch (e) { return false; }

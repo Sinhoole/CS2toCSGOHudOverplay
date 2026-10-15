@@ -1120,6 +1120,19 @@ console.log('\n[13] 首页 / 配置方案 / 教程 / 图标开关 / 画布修复
       setJs.includes('modules.ammo.bulletColor') && setJs.includes('modules.ammo.bulletLowColor')
       && setJs.includes('modules.ammo.lowAmmoThreshold') && setJs.includes('modules.ammo.bulletRoll')
       && setJs.includes('modules.ammo.bulletRollMs') && setJs.includes('modules.ammo.bulletRollBlur'));
+    // ---- 忽略系统减少动态（Windows 关「动画效果」会让动画全灭，见 2026-10-15 排查）----
+    check('DEFAULTS.hud 含 ignoreReducedMotion（默认 false = 跟随系统）',
+      DEF.hud.ignoreReducedMotion === false);
+    check('宿主把忽略开关挂成 :root.force-motion 并写进共享状态',
+      /C\.forceMotion = hudCfg\.ignoreReducedMotion === true/.test(hudJs)
+      && hudJs.includes("documentElement.classList.toggle('force-motion'"));
+    check('减少动态的关闭规则都带 :root:not(.force-motion)（强制开时失效）',
+      (hudCss.match(/prefers-reduced-motion: reduce\) \{[\s\S]*?\n\}/g) || [])
+        .every((block) => !/^\s*\.[a-z]/m.test(block)));
+    check('渲染层 JS 侧尊重忽略开关（forceMotion 时照常播动画）',
+      hudJs.includes('if (C.forceMotion) return false;'));
+    check('设置页有「忽略系统减少动态」开关',
+      setJs.includes('hud.ignoreReducedMotion'));
   }
 
   // ---- 剪影颜色（默认 + 每槽位独立）----
