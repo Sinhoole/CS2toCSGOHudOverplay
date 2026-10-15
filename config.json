@@ -3,10 +3,10 @@
   "host": "127.0.0.1",
   "token": "",
   "displayIndex": 0,
-  "designWidth": 1280,
-  "designHeight": 960,
+  "designWidth": 996,
+  "designHeight": 1093,
   "fit": "fill",
-  "scale": 0.64,
+  "scale": 0.73,
   "safezone": {
     "x": 0.95,
     "y": 0.95
@@ -19,10 +19,14 @@
   },
   "font": {
     "preset": "default",
-    "family": "Segoe UI"
+    "family": ""
   },
   "text": {
-    "weaponNames": {},
+    "weaponNames": {
+      "weapon_ak47": "“10188upup”",
+      "weapon_usp_silencer": "“我特别感动别人嫌平庸”",
+      "_knife": "“6657upup”"
+    },
     "grenadeChars": {
       "flame": "火",
       "smoke": "烟",
@@ -55,40 +59,49 @@
       "centerColor": "#333333"
     },
     "money": {
-      "offsetX": -40,
-      "offsetY": -520,
-      "scaleX": 1.02,
-      "scaleY": 1.02,
+      "offsetX": -30,
+      "offsetY": -599,
+      "scaleX": 0.83,
+      "scaleY": 0.83,
       "rotate": 0,
       "opacity": 1,
       "glow": 0,
       "glowColor": "#FFFFFF",
       "barColor": "#0E131A",
-      "barAlpha": 0.21
+      "barAlpha": 0.17
     },
     "vitals": {
-      "offsetX": -40,
-      "offsetY": 45,
-      "scaleX": 1,
-      "scaleY": 0.75,
+      "offsetX": -18,
+      "offsetY": 40,
+      "scaleX": 0.63,
+      "scaleY": 0.63,
       "rotate": 0,
       "opacity": 1,
       "glow": 0,
       "glowColor": "#FFFFFF",
       "barColor": "#0E131A",
-      "barAlpha": 0.22
+      "barAlpha": 0.24
     },
     "ammo": {
       "offsetX": 0,
       "offsetY": 43,
-      "scaleX": 1,
-      "scaleY": 0.75,
+      "scaleX": 0.72,
+      "scaleY": 0.72,
       "rotate": 0,
       "opacity": 1,
       "glow": 0,
       "glowColor": "#FFFFFF",
       "barColor": "#0E131A",
-      "barAlpha": 0.22
+      "barAlpha": 0.22,
+      "killsOffsetX": -29,
+      "killsOffsetY": -1,
+      "killsScale": 1,
+      "bulletColor": "#C2C2C2",
+      "bulletLowColor": "#E8231C",
+      "lowAmmoThreshold": 4,
+      "bulletRoll": true,
+      "bulletRollMs": 70,
+      "bulletRollBlur": 2
     },
     "weaponList": {
       "offsetX": 67,
@@ -101,28 +114,37 @@
       "glowColor": "#FFFFFF",
       "textColor": "#FFFFFF",
       "dimColor": "rgba(255, 255, 255, 0.77)",
+      "textSize": 42,
+      "textOffsetX": 0,
+      "textOffsetY": 0,
+      "numSize": 22,
+      "numOffsetX": 0,
+      "numOffsetY": 0,
       "svgMode": true,
       "svg": {
-        "offsetX": 27,
-        "offsetY": -68,
-        "scaleX": 2.46,
-        "scaleY": 1.73,
+        "offsetX": 75,
+        "offsetY": 19,
+        "scaleX": 1.01,
+        "scaleY": 1.23,
         "rotate": 0,
         "opacity": 1,
         "color": "#545454",
         "activeColor": "#FFFFFF",
-        "glow": 0,
-        "glowColor": "#FF0000",
-        "gap": 12,
-        "numGap": 26,
-        "activeScale": 1.18,
+        "glow": 1,
+        "glowColor": "#00F5CC",
+        "gap": 0,
+        "numGap": 55,
+        "activeScale": 1.03,
         "showName": true,
-        "nameSize": 13,
+        "nameSize": 11,
         "nameColor": "#FFFFFF",
-        "nameOffsetX": 0,
-        "nameOffsetY": 0,
-        "nameGlow": true,
+        "nameOffsetX": -2,
+        "nameOffsetY": -45,
+        "nameGlow": false,
         "nameGlowColor": "",
+        "numSize": 18,
+        "numOffsetX": 0,
+        "numOffsetY": 0,
         "slotNames": {
           "1": "",
           "2": "",
@@ -139,21 +161,49 @@
           "5": ""
         },
         "colors": {
-          "1": "#FFFFFF",
-          "2": "#FFFFFF",
+          "1": "#545454",
+          "2": "#545454",
           "3": "",
           "4": "",
           "5": ""
         },
-        "glowColors": {
+        "activeColors": {
           "1": "",
           "2": "",
           "3": "",
           "4": "",
           "5": ""
         },
+        "iconSizes": {
+          "1": 120,
+          "2": 83,
+          "3": 98,
+          "4": 48,
+          "5": 46
+        },
+        "iconOffsetX": {
+          "1": -6,
+          "2": -10,
+          "3": -6,
+          "4": 0,
+          "5": 0
+        },
+        "iconOffsetY": {
+          "1": 39,
+          "2": 11,
+          "3": -15,
+          "4": -39,
+          "5": -34
+        },
+        "glowColors": {
+          "1": "#FFAE00",
+          "2": "#0640EF",
+          "3": "",
+          "4": "",
+          "5": ""
+        },
         "knives": {
-          "weapon_bayonet": "knife_butterfly.svg",
+          "weapon_bayonet": "",
           "weapon_knife": "knife_butterfly.svg",
           "weapon_knifegg": "knife_butterfly.svg",
           "weapon_knife_bowie": "knife_butterfly.svg",
@@ -430,7 +480,8 @@
     "moneySpendColor": "#E8231C",
     "moneyDeltaHoldMs": 1800,
     "aliveCountMode": "label",
-    "factionMark": true
+    "factionMark": true,
+    "ignoreReducedMotion": true
   },
   "show": {
     "scoreBar": false,
